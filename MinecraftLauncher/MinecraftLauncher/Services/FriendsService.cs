@@ -7,33 +7,33 @@ using MQTTnet.Protocol;
 
 namespace DedLauncher.Services;
 
-/// <summary>
-/// Друзья, чат, заявки, приглашения и групповые чаты через публичный MQTT-брокер.
-/// Темы:
-///   dedlauncher/v1/{pairhash}  — личный канал пары друзей (presence/chat/invite)
-///   dedlauncher/v1/req/{code}  — заявки конкретному пользователю
-///   dedlauncher/v1/grp/{code}  — групповой чат по коду группы
-/// </summary>
+
+
+
+
+
+
+
 public class FriendsService : IDisposable
 {
     private readonly IMqttClient _client;
-    private readonly Dictionary<string, string> _friendsByTopic = new(); // pair-topic -> code
+    private readonly Dictionary<string, string> _friendsByTopic = new(); 
     private readonly HashSet<string> _groupCodes = new();
     private bool _started;
 
     public string MyCode { get; }
     public string DisplayName { get; set; } = "";
 
-    public event Action<string, string, string?, string?, bool>? PresenceReceived; // code, name, server, status, online
-    public event Action<string, string, string>? MessageReceived;                  // code, name, text
-    public event Action<string>? TypingReceived;                                    // code
-    public event Action<string, string>? RequestReceived;                          // code, name
-    public event Action<string, string>? RequestAccepted;                          // code, name
-    public event Action<string, string>? InviteReceived;                           // code, server
-    public event Action<string, string>? GroupPresence;                            // groupCode, name
-    public event Action<string, string, string>? GroupMessage;                     // groupCode, name, text
-    public event Action<string, string, string?, string?>? SkinReceived;           // code, mcName, skinBase64?, capeBase64?
-    public event Action<string>? SkinRequested;                                     // code (друг просит наш скин)
+    public event Action<string, string, string?, string?, bool>? PresenceReceived; 
+    public event Action<string, string, string>? MessageReceived;                  
+    public event Action<string>? TypingReceived;                                    
+    public event Action<string, string>? RequestReceived;                          
+    public event Action<string, string>? RequestAccepted;                          
+    public event Action<string, string>? InviteReceived;                           
+    public event Action<string, string>? GroupPresence;                            
+    public event Action<string, string, string>? GroupMessage;                     
+    public event Action<string, string, string?, string?>? SkinReceived;           
+    public event Action<string>? SkinRequested;                                     
 
     public event Action? Connected;
 
@@ -80,7 +80,7 @@ public class FriendsService : IDisposable
         catch { }
     }
 
-    // ─── Темы ───
+    
 
     private static string PairTopic(string a, string b)
     {
@@ -92,7 +92,7 @@ public class FriendsService : IDisposable
     private static string ReqTopic(string code) => "dedlauncher/v1/req/" + code.ToUpper();
     private static string GroupTopic(string code) => "dedlauncher/v1/grp/" + code.ToUpper();
 
-    // ─── Подписки ───
+    
 
     private async Task SubscribeAsync(string topic)
     {
@@ -115,7 +115,7 @@ public class FriendsService : IDisposable
             await SubscribeAsync(GroupTopic(g));
     }
 
-    // ─── Друзья и заявки ───
+    
 
     public async Task AddFriendAsync(string code)
     {
@@ -149,9 +149,9 @@ public class FriendsService : IDisposable
         await PublishAsync(PairTopic(MyCode, code), new { t = "invite", from = MyCode, server });
     }
 
-    // ─── Скины и плащи (DED-пользователи видят их друг у друга) ───
+    
 
-    /// <summary>Отправляет другу свой скин/плащ (base64 PNG).</summary>
+    
     public async Task PublishSkinAsync(string code, string mcName, string? skinBase64, string? capeBase64)
     {
         await PublishAsync(PairTopic(MyCode, code), new
@@ -165,7 +165,7 @@ public class FriendsService : IDisposable
         });
     }
 
-    /// <summary>Просим друга прислать его скин/плащ.</summary>
+    
     public async Task RequestSkinAsync(string code)
     {
         await PublishAsync(PairTopic(MyCode, code), new { t = "sk_req", from = MyCode });
@@ -203,7 +203,7 @@ public class FriendsService : IDisposable
         try { await PublishAsync(PairTopic(MyCode, code), payload); } catch { }
     }
 
-    /// <summary>Сигнал «печатает...» выбранному другу.</summary>
+    
     public async Task SendTypingAsync(string code)
     {
         if (!_client.IsConnected) return;
@@ -211,7 +211,7 @@ public class FriendsService : IDisposable
         try { await PublishAsync(PairTopic(MyCode, code), payload); } catch { }
     }
 
-    // ─── Группы ───
+    
 
     public async Task JoinGroupAsync(string code)
     {
@@ -260,7 +260,7 @@ public class FriendsService : IDisposable
         catch { }
     }
 
-    // ─── Приём ───
+    
 
     private Task OnMessageAsync(MqttApplicationMessageReceivedEventArgs e)
     {
@@ -278,7 +278,7 @@ public class FriendsService : IDisposable
             var name = root.TryGetProperty("name", out var nm) ? nm.GetString() ?? "" : "";
             var type = root.TryGetProperty("t", out var t) ? t.GetString() : "";
 
-            // Личный канал
+            
             if (_friendsByTopic.TryGetValue(topic, out var code))
             {
                 if (type == "p")
@@ -319,7 +319,7 @@ public class FriendsService : IDisposable
                 return Task.CompletedTask;
             }
 
-            // Заявки
+            
             if (topic == ReqTopic(MyCode))
             {
                 if (type == "req") RequestReceived?.Invoke(from, name);
@@ -327,7 +327,7 @@ public class FriendsService : IDisposable
                 return Task.CompletedTask;
             }
 
-            // Группы
+            
             var groupTopicPrefix = "dedlauncher/v1/grp/";
             if (topic.StartsWith(groupTopicPrefix))
             {

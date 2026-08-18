@@ -1,10 +1,10 @@
 namespace DedLauncher.ViewModels;
 
-/// <summary>
-/// Генерирует короткий двухтоновый «бип-бип» для уведомлений о сообщениях.
-/// Свой WAV вместо системного Asterisk — тот зависит от звуковой схемы
-/// Windows и на части машин не проигрывается.
-/// </summary>
+
+
+
+
+
 public static class MessageSound
 {
     private const int SampleRate = 44100;
@@ -15,7 +15,7 @@ public static class MessageSound
     {
         var samples = new List<short>();
 
-        // Два коротких тона: 880 Гц и 1174 Гц
+        
         AppendTone(samples, 880, 0.09);
         AppendTone(samples, 1174, 0.12);
 
@@ -28,7 +28,7 @@ public static class MessageSound
             bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
             bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
             bw.Write(16);
-            bw.Write((short)1);                       // PCM
+            bw.Write((short)1);                       
             bw.Write((short)Channels);
             bw.Write(SampleRate);
             bw.Write(SampleRate * Channels * BitsPerSample / 8);
@@ -48,7 +48,7 @@ public static class MessageSound
         for (int i = 0; i < count; i++)
         {
             double t = (double)i / SampleRate;
-            // Плавное затухание, чтобы не щёлкало на конце
+            
             double envelope = 1.0 - (double)i / count;
             envelope *= envelope;
             double value = Math.Sin(2 * Math.PI * freq * t) * envelope * 0.6;

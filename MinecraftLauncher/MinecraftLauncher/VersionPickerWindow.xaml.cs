@@ -4,10 +4,10 @@ using System.Windows.Input;
 
 namespace DedLauncher;
 
-/// <summary>
-/// Тёмное окно выбора версии мода/файла. Рекомендуемая (совместимая
-/// с профилем) версия отмечена бейджем «ПОДХОДИТ» и выбрана по умолчанию.
-/// </summary>
+
+
+
+
 public partial class VersionPickerWindow : Window
 {
     public class Choice
@@ -25,7 +25,7 @@ public partial class VersionPickerWindow : Window
         InitializeComponent();
     }
 
-    /// <summary>Показывает окно и возвращает выбор (null — отмена).</summary>
+    
     public static Choice? ShowPick(string title, string subtitle,
         IReadOnlyList<Choice> choices, int recommendedIndex)
     {

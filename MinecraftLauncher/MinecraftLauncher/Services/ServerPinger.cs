@@ -5,10 +5,10 @@ using System.Text.Json;
 
 namespace DedLauncher.Services;
 
-/// <summary>
-/// Пинг Minecraft-сервера по протоколу Server List Ping (без авторизации).
-/// Возвращает онлайн, максимальный онлайн, MOTD и задержку.
-/// </summary>
+
+
+
+
 public static class ServerPinger
 {
     public record ServerPingResult(bool Success, string Version, int Online, int Max, string Description, int LatencyMs);
@@ -24,40 +24,40 @@ public static class ServerPinger
             {
                 await client.ConnectAsync(address, port, cts.Token);
 
-                // Отключаем алгоритм Нэгла — иначе мелкий пакет запроса статуса
-                // задерживается до ACK хэндшейка, и пинг завышается на сотни мс
+                
+                
                 client.NoDelay = true;
 
                 var stream = client.GetStream();
                 stream.ReadTimeout = timeoutMs;
 
-                // Handshake (0x00) + Status Request (0x00) — два кадра в ОДНОЙ записи,
-                // чтобы сервер получил запрос сразу и не ждал второй пакет
+                
+                
                 using var ms = new MemoryStream();
-                WriteVarInt(ms, 0x00);                       // packet id: handshake
-                WriteVarInt(ms, -1);                         // protocol version
-                WriteString(ms, address);                    // server address
+                WriteVarInt(ms, 0x00);                       
+                WriteVarInt(ms, -1);                         
+                WriteString(ms, address);                    
                 ms.WriteByte((byte)(port >> 8));
                 ms.WriteByte((byte)(port & 0xFF));
-                WriteVarInt(ms, 1);                          // next state: status
+                WriteVarInt(ms, 1);                          
 
                 var handshake = ms.ToArray();
                 using var combined = new MemoryStream();
-                WriteVarInt(combined, handshake.Length);     // кадр 1: хэндшейк
+                WriteVarInt(combined, handshake.Length);     
                 combined.Write(handshake, 0, handshake.Length);
-                combined.Write(new byte[] { 0x01, 0x00 }, 0, 2); // кадр 2: status request
+                combined.Write(new byte[] { 0x01, 0x00 }, 0, 2); 
                 var frame = combined.ToArray();
                 await stream.WriteAsync(frame, cts.Token);
                 await stream.FlushAsync(cts.Token);
 
-                // Читаем ответ
+                
                 int len = ReadVarInt(stream);
                 var data = new byte[len];
                 await ReadExactlyAsync(stream, data, len, cts.Token);
 
                 int offset = 0;
                 int packetId = ReadVarInt(data, ref offset);
-                if (packetId != 0x00) throw new Exception("Неожиданный пакет от сервера");
+                if (packetId != 0x00) throw new Exception("cyr1");
 
                 int jsonLen = ReadVarInt(data, ref offset);
                 string json = Encoding.UTF8.GetString(data, offset, jsonLen);
@@ -97,7 +97,7 @@ public static class ServerPinger
         });
     }
 
-    // ─── VarInt helpers ───
+    
 
     private static void WriteVarInt(Stream stream, int value)
     {

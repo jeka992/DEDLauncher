@@ -1,4 +1,0 @@
-{
-  "dotnet.defaultSolution": "${workspaceFolder}/CmlLib.Core.sln",
-  "csharp.suppressDotnetRestoreNotification": true
-}

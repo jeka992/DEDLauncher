@@ -19,9 +19,9 @@ public class ModInfo
     public DateTime InstalledAt { get; set; } = DateTime.UtcNow;
 }
 
-/// <summary>
-/// Установленный ресурспак или шейдер (файл в папке resourcepacks/shaderpacks).
-/// </summary>
+
+
+
 public class InstalledPackItem
 {
     public string FileName { get; set; } = "";
@@ -49,7 +49,7 @@ public class FabricLoaderEntry
     public bool Stable { get; set; }
 }
 
-// Ответ /loader/{mcVersion} — вложенная структура с полем loader
+
 public class FabricLoaderMcEntry
 {
     [JsonPropertyName("loader")]
@@ -251,7 +251,7 @@ public class CurseForgeFile
     public string DownloadUrl { get; set; } = "";
 }
 
-// CFWidget API models (no API key required)
+
 public class CfWidgetProject
 {
     [JsonPropertyName("id")]

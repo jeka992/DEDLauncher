@@ -23,7 +23,7 @@ public class ModService
     private readonly HttpClient _http;
     private readonly string _cacheDir;
 
-    // Кэш иконок: память + диск (иконки меняются редко)
+    
     private static readonly ConcurrentDictionary<string, ImageSource?> IconMemoryCache = new();
     private static readonly ConcurrentDictionary<string, Task<ImageSource?>> IconInflight = new();
 
@@ -42,9 +42,9 @@ public class ModService
         MigrateModsToStandardFolder();
     }
 
-    /// <summary>
-    /// Переносит моды из старого расположения profiles/{id}/mods в стандартное minecraft/mods.
-    /// </summary>
+    
+    
+    
     private void MigrateModsToStandardFolder()
     {
         try
@@ -73,16 +73,16 @@ public class ModService
 
     public string GetModsDir(string profileId = "")
     {
-        // Моды кладутся в стандартную папку gameDir/mods — Fabric/Forge читают именно оттуда
+        
         var dir = Path.Combine(GameDir, "mods");
         Directory.CreateDirectory(dir);
         return dir;
     }
 
-    /// <summary>
-    /// Игровая папка текущего профиля (GameDir). Профили изолированы:
-    /// у каждого своя папка модов, миров и настроек.
-    /// </summary>
+    
+    
+    
+    
     public string GameDir { get; set; } = MinecraftPathHelper.GameDir;
 
     public async Task<System.Windows.Media.ImageSource?> LoadIconAsync(string url)
@@ -142,10 +142,10 @@ public class ModService
         return Convert.ToHexString(hash).ToLowerInvariant() + ".png";
     }
 
-    /// <summary>
-    /// JSON с дисковым кэшем (TTL). Каталоги и метаданные кэшируются,
-    /// чтобы повторные открытия вкладок были мгновенными.
-    /// </summary>
+    
+    
+    
+    
     private async Task<T?> GetCachedOrFetchAsync<T>(string key, Func<Task<T?>> fetch, TimeSpan ttl)
     {
         var file = Path.Combine(_cacheDir, key + ".json");
@@ -172,13 +172,13 @@ public class ModService
         return result;
     }
 
-    /// <summary>
-    /// Служебные моды лаунчера — не показываются в списке модов,
-    /// ими управляет сам лаунчер (ставит и обновляет при запуске).
-    /// </summary>
+    
+    
+    
+    
     private static readonly string[] ServiceMods = { "ded-mod" };
 
-    /// <summary>Версии Minecraft, для которых собран DED Mod (ded-mod-1.0.0-{версия}.jar).</summary>
+    
     private static readonly string[] DedModVersions =
     {
         "1.16.5", "1.17.1", "1.18.2",
@@ -202,12 +202,12 @@ public class ModService
             var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
             if (!isJar && !isDisabled) continue;
 
-            // Служебные моды лаунчера не показываем как обычные моды
+            
             var baseName = Path.GetFileNameWithoutExtension(fileName).ToLower();
             if (ServiceMods.Any(s => baseName.StartsWith(s, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            // Пропускаем и удаляем пустые/битые jar-файлы
+            
             try
             {
                 if (new FileInfo(file).Length == 0)
@@ -236,11 +236,11 @@ public class ModService
         return mods;
     }
 
-    /// <summary>
-    /// Включает/отключает мод переименованием: .jar ↔ .jar.disabled.
-    /// Fabric загружает только файлы с расширением .jar, поэтому
-    /// отключённый мод физически не попадёт в игру.
-    /// </summary>
+    
+    
+    
+    
+    
     public string? SetModEnabled(ModInfo mod, bool enabled)
     {
         if (mod == null || string.IsNullOrEmpty(mod.FilePath) || !File.Exists(mod.FilePath)) return null;
@@ -291,18 +291,18 @@ public class ModService
         if (File.Exists(filePath)) File.Delete(filePath);
     }
 
-    // ─── Modrinth ───
+    
 
     public async Task<List<ModrinthMod>> SearchModrinthAsync(string query, string mcVersion = "", string loader = "", int limit = 30)
         => (await SearchModrinthPageAsync(query, "mod", mcVersion, loader, limit, 0)).Results;
 
-    /// <summary>
-    /// Поиск Modrinth с пагинацией. Возвращает страницу результатов и общее число найденного.
-    /// </summary>
+    
+    
+    
     public async Task<(List<ModrinthMod> Results, int TotalHits)> SearchModrinthPageAsync(
         string query, string projectType, string mcVersion, string loader, int limit, int offset)
     {
-        // Популярные каталоги (пустой запрос) кэшируем на 30 минут
+        
         if (string.IsNullOrWhiteSpace(query) && string.IsNullOrEmpty(mcVersion) && string.IsNullOrEmpty(loader))
         {
             var cached = await GetCachedOrFetchAsync(
@@ -316,11 +316,11 @@ public class ModService
             if (cached != null) return (cached.Results, cached.TotalHits);
         }
 
-        // First attempt: broad search without strict version filter (returns more results)
+        
         var (results2, total2) = await SearchModrinthCoreAsync(query, projectType, "", "", limit, offset);
         if (results2.Count == 0 && !string.IsNullOrEmpty(mcVersion))
         {
-            // Fallback: try with version filter if broad search was empty
+            
             (results2, total2) = await SearchModrinthCoreAsync(query, projectType, mcVersion, loader, limit, offset);
         }
         return (results2, total2);
@@ -364,12 +364,12 @@ public class ModService
         catch { return null; }
     }
 
-    /// <summary>
-    /// Лучшая версия проекта Modrinth: сначала точное совпадение (MC + загрузчик),
-    /// потом без загрузчика, потом вообще без фильтров.
-    /// Нужно для ресурспаков/шейдеров — у них загрузчик «minecraft»/«iris»,
-    /// а не «fabric», и они поддерживают много версий MC сразу.
-    /// </summary>
+    
+    
+    
+    
+    
+    
     public async Task<ModrinthVersion?> GetModrinthBestVersionAsync(string projectId, string mcVersion, string loader)
     {
         var version = await GetModrinthLatestVersion(projectId, mcVersion, loader);
@@ -385,14 +385,14 @@ public class ModService
         return version;
     }
 
-    /// <summary>
-    /// Все версии проекта Modrinth (с фильтром по MC-версии и загрузчику, если заданы).
-    /// </summary>
+    
+    
+    
     public async Task<List<ModrinthVersion>> GetModrinthVersionsAsync(string projectId, string mcVersion, string loader)
     {
         try
         {
-            // Список версий кэшируем на 10 минут (часто запрашивается при выборе версии)
+            
             var cached = await GetCachedOrFetchAsync(
                 $"mrv_{projectId}_{mcVersion}_{loader}",
                 async () =>
@@ -410,14 +410,14 @@ public class ModService
         catch { return new(); }
     }
 
-    /// <summary>
-    /// Скачивает конкретную версию мода Modrinth в папку модов.
-    /// </summary>
+    
+    
+    
     public async Task DownloadModrinthVersionAsync(ModrinthVersion version, string targetFolder,
         IProgress<DownloadProgress>? progress = null)
     {
         var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files.FirstOrDefault();
-        if (file == null) throw new Exception("Нет файла");
+        if (file == null) throw new Exception("cyr1");
 
         Directory.CreateDirectory(targetFolder);
         var destPath = Path.Combine(targetFolder, file.Filename);
@@ -441,7 +441,7 @@ public class ModService
         progress?.Report(new DownloadProgress { FileName = file.Filename, TotalBytes = file.Size });
         await DownloadFileAsync(file.Url, destPath, file.Size, progress);
 
-        // Устанавливаем обязательные зависимости
+        
         var installed = new HashSet<string>();
         foreach (var dep in version.Dependencies.Where(d => d.DependencyType == "required"))
         {
@@ -456,17 +456,17 @@ public class ModService
         }
     }
 
-    /// <summary>
-    /// Скачивает любой проект Modrinth (мод, ресурспак, шейдер) в указанную папку.
-    /// </summary>
+    
+    
+    
     public async Task DownloadModrinthToFolderAsync(ModrinthMod item, string mcVersion, string loader,
         string targetFolder, IProgress<DownloadProgress>? progress = null)
     {
         var version = await GetModrinthBestVersionAsync(item.ProjectId, mcVersion, loader);
-        if (version == null) throw new Exception("Нет совместимой версии");
+        if (version == null) throw new Exception("cyr2");
 
         var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files.FirstOrDefault();
-        if (file == null) throw new Exception("Нет файла");
+        if (file == null) throw new Exception("cyr3");
 
         Directory.CreateDirectory(targetFolder);
         var destPath = Path.Combine(targetFolder, file.Filename);
@@ -475,11 +475,11 @@ public class ModService
         await DownloadFileAsync(file.Url, destPath, file.Size, progress);
     }
 
-    /// <summary>
-    /// Скачивает мод Modrinth по ID проекта (например Sodium: AANobbMI)
-    /// в указанную папку вместе с обязательными зависимостями.
-    /// Возвращает false, если нет версии под заданную MC/загрузчик.
-    /// </summary>
+    
+    
+    
+    
+    
     public async Task<bool> DownloadModrinthProjectAsync(string projectId, string mcVersion, string loader,
         string targetFolder, IProgress<DownloadProgress>? progress = null)
     {
@@ -497,7 +497,7 @@ public class ModService
             await DownloadFileAsync(file.Url, destPath, file.Size, progress);
         }
 
-        // Обязательные зависимости (рекурсивно, без циклов)
+        
         var installed = new HashSet<string> { projectId };
         foreach (var dep in version.Dependencies.Where(d => d.DependencyType == "required"))
         {
@@ -539,13 +539,13 @@ public class ModService
         var destPath = Path.Combine(modsDir, file.Filename);
         if (File.Exists(destPath)) return;
 
-        progress?.Report(new DownloadProgress { FileName = $"Зависимость: {file.Filename}", TotalBytes = file.Size });
+        progress?.Report(new DownloadProgress { FileName = $"cyr4", TotalBytes = file.Size });
         await DownloadFileAsync(file.Url, destPath, file.Size, progress);
     }
 
     private async Task DownloadFileAsync(string url, string destPath, long size, IProgress<DownloadProgress>? progress)
     {
-        // Уже скачан и не пустой — не трогаем (иначе ошибка, если файл занят игрой/антивирусом)
+        
         try
         {
             if (File.Exists(destPath) && new FileInfo(destPath).Length > 0)
@@ -576,20 +576,20 @@ public class ModService
             });
         }
 
-        // Проверка: файл не должен быть пустым (иначе удаляем — битый jar ломает запуск)
+        
         if (total == 0)
         {
             await fs.DisposeAsync();
             try { File.Delete(destPath); } catch { }
-            throw new Exception($"Скачанный файл пуст: {Path.GetFileName(destPath)}");
+            throw new Exception($"cyr5");
         }
     }
 
-    // ─── CurseForge (via CFWidget, no API key) ───
+    
 
     private const string CfWidgetApi = "https://api.cfwidget.com";
 
-    // Популярные проекты CurseForge по категориям (слаги) для поиска без API-ключа
+    
     private static readonly string[] PopularCurseForgeMods =
     {
         "sodium", "iris", "lithium", "fabric-api", "jei", "journeymap",
@@ -637,8 +637,8 @@ public class ModService
             _ => PopularCurseForgeMods
         };
 
-        // Полный список популярных проектов кэшируем на 1 час,
-        // фильтрация по запросу всегда выполняется на клиенте
+        
+        
         var projects = await GetCachedOrFetchAsync(
             $"cf_pop_{category}",
             async () =>
@@ -682,7 +682,7 @@ public class ModService
 
     private async Task<CfWidgetProject?> GetCfWidgetProjectByIdAsync(int projectId)
     {
-        // Метаданные проекта с файлами кэшируем на 6 часов
+        
         return await GetCachedOrFetchAsync(
             $"cf_project_{projectId}",
             async () =>
@@ -754,7 +754,7 @@ public class ModService
         }
     }
 
-    // ─── OptiFine ───
+    
 
     public class OptiFineEntry
     {
@@ -764,9 +764,9 @@ public class ModService
         public string Filename { get; set; } = "";
     }
 
-    /// <summary>
-    /// Список релизных (не preview) версий OptiFine для указанной версии Minecraft.
-    /// </summary>
+    
+    
+    
     public async Task<List<OptiFineEntry>> GetOptiFineVersionsAsync(string mcVersion)
     {
         try
@@ -780,24 +780,24 @@ public class ModService
         catch { return new(); }
     }
 
-    /// <summary>
-    /// Устанавливает OptiFine (как MultiMC): скачивает инсталлер в libraries,
-    /// достаёт launchwrapper-of и создаёт версию на базе ванильной
-    /// (mainClass = launchwrapper + --tweakClass optifine.OptiFineTweaker).
-    /// typePatch — например "HD_U_J8".
-    /// </summary>
+    
+    
+    
+    
+    
+    
     public async Task InstallOptiFineAsync(string mcVersion, string typePatch,
         IProgress<DownloadProgress>? progress = null)
     {
         var parts = typePatch.Split('_');
-        if (parts.Length < 2) throw new Exception("Неверный формат версии OptiFine");
+        if (parts.Length < 2) throw new Exception("cyr6");
 
         var type = parts[0];
         var patch = string.Join('_', parts.Skip(1));
         var optiVersion = $"{mcVersion}_{type}_{patch}";
         var versionId = $"{mcVersion}-OptiFine_{type}_{patch}";
 
-        // 1. Сам OptiFine (инсталлер) → libraries/optifine/OptiFine/{version}/OptiFine-{version}.jar
+        
         var optiJar = Path.Combine(MinecraftPathHelper.LibrariesDir,
             "optifine", "OptiFine", optiVersion, $"OptiFine-{optiVersion}.jar");
         if (!File.Exists(optiJar) || new FileInfo(optiJar).Length == 0)
@@ -807,8 +807,8 @@ public class ModService
             await DownloadFileAsync($"{OptiFineApi}/optifine/{mcVersion}/{type}/{patch}", optiJar, 1, progress);
         }
 
-        // 2. launchwrapper-of изнутри инсталлера → libraries/optifine/launchwrapper-of/{ver}/
-        //    (версия файла зависит от версии OptiFine: 2.2, 2.3, ...)
+        
+        
         string? launchWrapperVersion = null;
         string? launchWrapperPath = null;
         using (var probe = ZipFile.OpenRead(optiJar))
@@ -823,7 +823,7 @@ public class ModService
             }
         }
         if (launchWrapperVersion == null || launchWrapperPath == null)
-            throw new Exception("В инсталлере OptiFine не найден launchwrapper");
+            throw new Exception("cyr7");
 
         var lwJar = Path.Combine(MinecraftPathHelper.LibrariesDir,
             "optifine", "launchwrapper-of", launchWrapperVersion, $"launchwrapper-of-{launchWrapperVersion}.jar");
@@ -835,18 +835,18 @@ public class ModService
             entry.ExtractToFile(lwJar, true);
         }
 
-        // 3. Версия на базе ванильной (полный standalone-json, без inheritsFrom)
+        
         var vanillaJsonPath = Path.Combine(MinecraftPathHelper.VersionsDir, mcVersion, $"{mcVersion}.json");
         if (!File.Exists(vanillaJsonPath))
-            throw new Exception($"Сначала установите Minecraft {mcVersion} (ваниль)");
+            throw new Exception($"cyr8");
 
         var root = JsonNode.Parse(await File.ReadAllTextAsync(vanillaJsonPath)) as JsonObject
-                   ?? throw new Exception("Не удалось прочитать JSON ванильной версии");
+                   ?? throw new Exception("cyr9");
         root["id"] = versionId;
         root["mainClass"] = "net.minecraft.launchwrapper.Launch";
         root["type"] = "release";
 
-        // Добавляем --tweakClass optifine.OptiFineTweaker в игровые аргументы
+        
         if (root["arguments"] is JsonObject args && args["game"] is JsonArray gameArgs)
         {
             foreach (var item in gameArgs.ToList())
@@ -868,7 +868,7 @@ public class ModService
                 "--tweakClass optifine.OptiFineTweaker";
         }
 
-        // Библиотеки OptiFine (класть не нужно — мы их уже положили, CmlLib найдёт на диске)
+        
         var libraries = root["libraries"] as JsonArray;
         if (libraries == null)
         {
@@ -885,7 +885,7 @@ public class ModService
             root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    // ─── Forge / Fabric ───
+    
 
     public async Task<List<ForgeVersionEntry>> GetForgeVersionsAsync(string mcVersion)
     {
@@ -907,9 +907,9 @@ public class ModService
         catch { return new(); }
     }
 
-    /// <summary>
-    /// Возвращает последнюю стабильную версию Fabric-лоадера для указанной версии Minecraft.
-    /// </summary>
+    
+    
+    
     public async Task<string?> GetLatestFabricLoaderAsync(string mcVersion)
     {
         try
@@ -921,9 +921,9 @@ public class ModService
         catch { return null; }
     }
 
-    /// <summary>
-    /// Возвращает список версий Fabric-лоадера для указанной версии Minecraft.
-    /// </summary>
+    
+    
+    
     public async Task<List<string>> GetFabricLoadersForMcAsync(string mcVersion)
     {
         try
@@ -961,7 +961,7 @@ public class ModService
         if (File.Exists(versionJsonPath))
         {
             var json = await File.ReadAllTextAsync(versionJsonPath);
-            // Берём реальный ID версии из version.json
+            
             try
             {
                 using var doc = JsonDocument.Parse(json);
@@ -997,7 +997,7 @@ public class ModService
         var fabricUrl = $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{loaderVersion}/profile/json";
         var json = await _http.GetStringAsync(fabricUrl);
 
-        // Берём реальный ID версии из JSON (например fabric-loader-0.16.9-1.21.1)
+        
         var versionId = "fabric-" + mcVersion;
         try
         {
@@ -1046,11 +1046,11 @@ public class ModService
         return $"{group}/{artifact}/{version}/{artifact}-{version}{classifier}.jar";
     }
 
-    /// <summary>
-    /// Фоновая предзагрузка всех популярных каталогов (моды/ресурспаки/шейдеры
-    /// из Modrinth и CurseForge) сразу после старта лаунчера — вкладки
-    /// контента открываются мгновенно из кэша.
-    /// </summary>
+    
+    
+    
+    
+    
     public async Task PrefetchPopularAsync(bool includeIcons = true)
     {
         try
@@ -1065,7 +1065,7 @@ public class ModService
         }
         catch { }
 
-        // Иконки популярных модов — в дисковый кэш, чтобы вкладка модов открылась мгновенно
+        
         if (!includeIcons) return;
         try
         {

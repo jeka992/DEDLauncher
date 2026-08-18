@@ -1,7 +1,7 @@
 <Window x:Class="DedLauncher.VersionPickerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Выбор версии"
+        Title=""
         Width="520" Height="460"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
@@ -13,7 +13,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolVis"/>
 
-        <!-- Кнопка закрытия окна -->
+        
         <Style x:Key="WinBtnClose" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource TextFaintBrush}"/>
@@ -38,7 +38,7 @@
             </Setter>
         </Style>
 
-        <!-- Строка версии в списке -->
+        
         <Style x:Key="VerItem" TargetType="ListBoxItem">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="0"/>
@@ -78,12 +78,12 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Заголовок окна (перетаскивание) -->
+            
             <Border Grid.Row="0" Background="{StaticResource BgHeaderBrush}"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid Margin="16,0">
-                    <TextBlock x:Name="TitleText" Text="Выбор версии" FontSize="13" FontWeight="Bold"
+                    <TextBlock x:Name="TitleText" Text="" FontSize="13" FontWeight="Bold"
                                VerticalAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
                     <Button Content="✕" Style="{StaticResource WinBtnClose}" Width="28" Height="24"
                             HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -92,11 +92,11 @@
             </Border>
 
             <TextBlock Grid.Row="1" x:Name="SubText"
-                       Text="Выберите версию для установки"
+                       Text=""
                        FontSize="10" Foreground="{StaticResource TextFaintBrush}"
                        Margin="18,12,18,10" TextWrapping="Wrap"/>
 
-            <!-- Список версий -->
+            
             <ListBox Grid.Row="2" x:Name="VersionsList" ItemContainerStyle="{StaticResource VerItem}"
                      Background="Transparent" BorderThickness="0"
                      Margin="12,0,12,8"
@@ -119,21 +119,21 @@
                             <Border Grid.Column="1" Background="{DynamicResource AccentBrush}" CornerRadius="4"
                                     Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center"
                                     Visibility="{Binding Recommended, Converter={StaticResource BoolVis}}">
-                                <TextBlock Text="ПОДХОДИТ" FontSize="8" FontWeight="Bold" Foreground="White"/>
+                                <TextBlock Text="" FontSize="8" FontWeight="Bold" Foreground="White"/>
                             </Border>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <!-- Кнопки -->
+            
             <Border Grid.Row="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
                     Background="{StaticResource BgPanelBrush}">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12">
-                    <Button x:Name="OkBtn" Content="Скачать" Style="{StaticResource BtnRed}"
+                    <Button x:Name="OkBtn" Content="" Style="{StaticResource BtnRed}"
                             Width="120" Height="34" Margin="0,0,8,0"
                             Click="Ok_Click"/>
-                    <Button Content="Отмена" Style="{StaticResource BtnOutline}"
+                    <Button Content="" Style="{StaticResource BtnOutline}"
                             Width="100" Height="34"
                             Click="Cancel_Click"/>
                 </StackPanel>

@@ -12,5 +12,5 @@ public class AccountInfo
     public string AvatarUrl { get; set; } = "";
     public bool IsLoggedIn => !string.IsNullOrEmpty(Username);
     public bool IsOffline => AccountType == "offline";
-    public string AccountTypeLabel => IsOffline ? "Оффлайн" : "MS";
+    public string AccountTypeLabel => IsOffline ? "cyr1" : "MS";
 }

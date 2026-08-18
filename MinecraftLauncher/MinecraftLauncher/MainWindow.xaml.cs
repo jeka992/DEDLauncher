@@ -27,10 +27,10 @@ public partial class MainWindow : Window
         _instance?.RefreshActiveButton();
     }
 
-    /// <summary>
-    /// Масштаб всего интерфейса (настройка «Размер шрифта»).
-    /// 13 = 100% (дизайнерский размер), 11–15 = 85%–115%.
-    /// </summary>
+    
+    
+    
+    
     public static void UpdateUiScale(int fontSize)
     {
         if (_instance == null) return;
@@ -43,7 +43,7 @@ public partial class MainWindow : Window
 
         _instance.RootBorder.LayoutTransform = new ScaleTransform(scale, scale);
 
-        // Компенсируем размер окна, чтобы контент не обрезался по краям
+        
         double factor = scale / oldScale;
         _instance.Width = Math.Max(_instance.MinWidth, _instance.Width * factor);
         _instance.Height = Math.Max(_instance.MinHeight, _instance.Height * factor);
@@ -71,7 +71,7 @@ public partial class MainWindow : Window
         _vm = new MainViewModel();
         DataContext = _vm;
 
-        // Логотип-картинка для кнопки «Главная»
+        
         try
         {
             var logoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "logo.png");
@@ -257,7 +257,7 @@ public partial class MainWindow : Window
         await _vm.SearchShadersAsync();
     }
 
-    // ─── Источники ресурспаков/шейдеров ───
+    
 
     private void RpSourceModrinth_Click(object sender, RoutedEventArgs e)
     {
@@ -324,7 +324,7 @@ public partial class MainWindow : Window
         BtnShaderSrcCurse.Style = _vm.ShaderSource == "CurseForge" ? active : inactive;
     }
 
-    // ─── Тумблеры «Браузер / Установленные» ───
+    
 
     private void ModsViewToggle_Click(object sender, RoutedEventArgs e)
     {
@@ -359,7 +359,7 @@ public partial class MainWindow : Window
         BtnShaderInstalledV.Style = _vm.ShowInstalledShaders ? active : inactive;
     }
 
-    // ─── Серверы ───
+    
 
     private async void AddServer_Click(object sender, RoutedEventArgs e)
     {
@@ -389,7 +389,7 @@ public partial class MainWindow : Window
             await _vm.JoinServerAsync(server);
     }
 
-    // ─── Бесконечная прокрутка ───
+    
 
     private async void ModsScroll_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
@@ -426,7 +426,7 @@ public partial class MainWindow : Window
             await _vm.LoadMoreCurseForgeShadersAsync();
     }
 
-    // ─── Установленные РП/шейдеры ───
+    
 
     private async void InstallCurseForgeResourcePack_Click(object sender, RoutedEventArgs e)
     {
@@ -573,10 +573,10 @@ public partial class MainWindow : Window
                 bmp.EndInit();
                 bmp.Freeze();
                 System.Windows.Clipboard.SetImage(bmp);
-                _vm.Status = "Скриншот скопирован в буфер обмена";
-                _vm.ShowToast("Скриншот скопирован ✓");
+                _vm.Status = "cyr1";
+                _vm.ShowToast("cyr2");
             }
-            catch { _vm.Status = "Не удалось скопировать скриншот"; }
+            catch { _vm.Status = "cyr3"; }
         }
     }
 
@@ -738,7 +738,7 @@ public partial class MainWindow : Window
         await _vm.ToggleOptimizationPackAsync();
     }
 
-    // ─── Drag & drop установка файлов ───
+    
 
     private void Window_DragEnter(object sender, DragEventArgs e)
     {
@@ -809,7 +809,7 @@ public partial class MainWindow : Window
 
     private void ClearDataBtn_Click(object sender, RoutedEventArgs e)
     {
-        var r = MessageBox.Show("Удалить ВСЕ данные лаунчера?", "Очистка",
+        var r = MessageBox.Show("cyr4", "cyr5",
             MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (r != MessageBoxResult.Yes) return;
         try
@@ -817,9 +817,9 @@ public partial class MainWindow : Window
             var dir = Helpers.MinecraftPathHelper.BaseDir;
             if (Directory.Exists(dir)) Directory.Delete(dir, true);
             Helpers.MinecraftPathHelper.Initialize();
-            MessageBox.Show("Данные очищены.", "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("cyr6", "cyr7", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-        catch (Exception ex) { MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show($"cyr8", "cyr9", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     protected override void OnClosed(EventArgs e)

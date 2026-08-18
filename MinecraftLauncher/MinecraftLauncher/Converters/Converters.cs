@@ -38,10 +38,10 @@ public class InverseBoolToVisibilityConverter : IValueConverter
     }
 }
 
-/// <summary>
-/// Высота списка = высота окна минус отступы сверху (Parameter).
-/// Списки заполняют окно целиком — без пустого пространства снизу.
-/// </summary>
+
+
+
+
 public class SubtractConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

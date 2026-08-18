@@ -5,16 +5,16 @@ using System.Text.Json;
 
 namespace DedLauncher.Services;
 
-/// <summary>
-/// Вход через Discord (OAuth2 + PKCE, scope: identify).
-/// Client ID публичный и зашит в лаунчер; Client Secret НЕ нужен —
-/// используется Proof Key for Code Exchange (PKCE), поэтому каждый
-/// пользователь входит без каких-либо ключей.
-/// </summary>
+
+
+
+
+
+
 public class DiscordAuthService
 {
-    // Публичный Client ID приложения DED Launcher. Это не секрет —
-    // он виден всем, это нормально для OAuth.
+    
+    
     public const string ClientId = "1538107296276545629";
 
     private readonly HttpClient _http;
@@ -31,7 +31,7 @@ public class DiscordAuthService
         const int port = 18000;
         var redirectUri = $"http://localhost:{port}/callback";
 
-        // PKCE: случайный code_verifier + его SHA256-хэш как challenge
+        
         var codeVerifier = GenerateCodeVerifier();
         var codeChallenge = Base64UrlEncode(SHA256.HashData(Encoding.ASCII.GetBytes(codeVerifier)));
 
@@ -51,7 +51,7 @@ public class DiscordAuthService
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(authUrl) { UseShellExecute = true }); }
         catch { listener.Stop(); return null; }
 
-        // Ждём callback (таймаут 2 минуты)
+        
         string? code = null;
         var timeout = Task.Delay(TimeSpan.FromMinutes(2), ct);
         var gotContext = listener.GetContextAsync();
@@ -69,8 +69,8 @@ public class DiscordAuthService
         var error = query["error"];
 
         var html = error != null
-            ? "<html><body style='background:#121212;color:#eee;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh'>Вход отклонён. Можно закрыть окно.</body></html>"
-            : "<html><body style='background:#121212;color:#4ade80;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh'>Успешно! Можно закрыть окно.</body></html>";
+            ? "cyr1"
+            : "cyr2";
         var bytes = Encoding.UTF8.GetBytes(html);
         ctx.Response.ContentType = "text/html; charset=utf-8";
         ctx.Response.ContentLength64 = bytes.Length;
@@ -80,7 +80,7 @@ public class DiscordAuthService
 
         if (string.IsNullOrEmpty(code)) return null;
 
-        // Обмен code на access token (PKCE — без client_secret)
+        
         var tokenResponse = await _http.PostAsync("https://discord.com/api/oauth2/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
@@ -95,7 +95,7 @@ public class DiscordAuthService
         var accessToken = tokenJson.RootElement.GetProperty("access_token").GetString();
         if (string.IsNullOrEmpty(accessToken)) return null;
 
-        // Данные пользователя
+        
         var req = new HttpRequestMessage(HttpMethod.Get, "https://discord.com/api/users/@me");
         req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         var userResponse = await _http.SendAsync(req, ct);
@@ -114,7 +114,7 @@ public class DiscordAuthService
         return new DiscordUser(id, username, avatarUrl);
     }
 
-    /// <summary>UUID для Minecraft из Discord ID (детерминированный, оффлайн-режим).</summary>
+    
     public static string UuidFromDiscordId(string discordId)
     {
         var data = Encoding.UTF8.GetBytes("Discord:" + discordId);

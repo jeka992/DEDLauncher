@@ -1,31 +1,31 @@
 # DED Launcher
 
-Лаунчер Minecraft для Windows на C# (.NET 8, WPF) + CmlLib.Core.
+Minecraft launcher for Windows built with C# (.NET 8, WPF) and CmlLib.Core.
 
-## Структура
+## Structure
 
-- `MinecraftLauncher/` — сам лаунчер (WPF)
-- `CmlLib.Core-master/` — форк движка CmlLib.Core (MIT)
+- `MinecraftLauncher/` — launcher application (WPF)
+- `CmlLib.Core-master/` — fork of the CmlLib.Core engine (MIT)
 
-## Сборка
+## Build
 
 ```
 dotnet publish MinecraftLauncher\MinecraftLauncher\MinecraftLauncher.csproj -c Release -r win-x64 --self-contained true
 ```
 
-Результат: `MinecraftLauncher\MinecraftLauncher\bin\Release\net8.0-windows\win-x64\publish\`
+Output: `MinecraftLauncher\MinecraftLauncher\bin\Release\net8.0-windows\win-x64\publish\`
 
-## Возможности
+## Features
 
-- Версии: релизы, снапшоты, старые (1.16.5 → 1.21.11)
-- Загрузчики: Vanilla, Fabric, Forge, OptiFine
-- Моды: Modrinth + CurseForge, включение/выключение
-- Ресурспаки и шейдеры
-- Профили с изоляцией
-- Друзья: чат, группы, приглашения на сервер
-- Скин и плащ (встроенный Fabric-мод)
-- Microsoft + оффлайн вход
+- Game versions: releases, snapshots, legacy (1.16.5 - 1.21.11)
+- Loaders: Vanilla, Fabric, Forge, OptiFine
+- Mods: Modrinth + CurseForge, enable/disable
+- Resource packs and shaders
+- Isolated profiles
+- Friends: chat, groups, server invites
+- Skin and cape (built-in Fabric mod)
+- Microsoft and offline accounts
 
-## Обновления
+## Updates
 
-Версии публикуются в Telegram-канале [@NeiroDEDmod](https://t.me/NeiroDEDmod). Формат поста: `#update 2.0.0` + ссылка на архив.
+Releases are announced in the Telegram channel [@NeiroDEDmod](https://t.me/NeiroDEDmod). Post format: `#update 2.0.0` + download link.

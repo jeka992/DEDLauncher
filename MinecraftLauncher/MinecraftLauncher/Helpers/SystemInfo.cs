@@ -32,7 +32,7 @@ public static class SystemInfo
                     return (long)(mem.ullTotalPhys / (1024 * 1024));
             }
             catch { }
-            return 8192; // fallback 8 GB
+            return 8192; 
         }
     }
 
@@ -60,9 +60,9 @@ public static class SystemInfo
         }
     }
 
-    /// <summary>
-    /// Максимум RAM, который можно выделить Minecraft (оставляем 2 ГБ системе).
-    /// </summary>
+    
+    
+    
     public static int MaxAllocatableMb
     {
         get
@@ -72,10 +72,10 @@ public static class SystemInfo
         }
     }
 
-    /// <summary>
-    /// Рекомендуемый объём RAM для Minecraft.
-    /// Ванилле хватает 2 ГБ, модам — 4 ГБ. Больше 6 ГБ почти никогда не нужно.
-    /// </summary>
+    
+    
+    
+    
     public static int RecommendedRamMb
     {
         get

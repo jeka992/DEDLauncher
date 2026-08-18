@@ -15,7 +15,7 @@ public partial class App : Application
 {
     private static Mutex? _singleMutex;
 
-    /// <summary>Версия лаунчера из сборки (например 2.0.0).</summary>
+    
     public static string VersionLabel
     {
         get
@@ -34,7 +34,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Режим установщика: копируем новую версию поверх существующей установки
+        
         if (e.Args.Length >= 3 && e.Args[0] == "--updatefolder")
         {
             Updater.CopyFolder(e.Args[1], e.Args[2]);
@@ -42,7 +42,7 @@ public partial class App : Application
             return;
         }
 
-        // Один экземпляр лаунчера
+        
         _singleMutex = new Mutex(true, "DEDLauncher.SingleInstance", out bool isNew);
         if (!isNew)
         {
@@ -50,14 +50,14 @@ public partial class App : Application
             return;
         }
 
-        // Меньше GC-пауз при работе UI (важно для слабых ПК)
+        
         try { GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency; } catch { }
 
         ApplyPerfSettings();
 
-        // В режиме слабого ПК снимаем все визуальные эффекты (тени — самое
-        // дорогое в WPF) и отключаем анимацию попапов у ЛЮБОГО элемента,
-        // включая те, что появятся позже (шаблоны, тултипы).
+        
+        
+        
         if (PerfSettings.LowEndMode)
         {
             EventManager.RegisterClassHandler(typeof(FrameworkElement), FrameworkElement.LoadedEvent,
@@ -75,12 +75,12 @@ public partial class App : Application
         window.Show();
     }
 
-    /// <summary>
-    /// Если на ПК уже установлен DED Launcher (другая папка), а запущенная
-    /// копия новее — предлагаем обновить установленный. Так раздаются
-    /// обновления вручную: скачал новую версию из Telegram/Discord,
-    /// запустил — лаунчер сам перенесёт себя на место старой установки.
-    /// </summary>
+    
+    
+    
+    
+    
+    
     private void CheckInstallUpdate()
     {
         try
@@ -98,7 +98,7 @@ public partial class App : Application
                 installed = doc.RootElement.TryGetProperty("path", out var p) ? p.GetString() : null;
             }
 
-            // Первый запуск — запоминаем текущую папку как установку
+            
             if (string.IsNullOrWhiteSpace(installed))
             {
                 WriteInstallMarker(markerPath, currentDir);
@@ -108,11 +108,11 @@ public partial class App : Application
             var installedDir = Path.GetFullPath(installed)
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-            // Запущено из той же папки — это и есть установка
+            
             if (string.Equals(installedDir, currentDir, StringComparison.OrdinalIgnoreCase))
                 return;
 
-            // Старая установка исчезла — принимаем текущую папку за новую
+            
             var targetExe = Path.Combine(installedDir, "DEDLauncher.exe");
             if (!File.Exists(targetExe))
             {
@@ -120,7 +120,7 @@ public partial class App : Application
                 return;
             }
 
-            // Сравниваем версии: обновлять только если запущенная копия новее
+            
             Version.TryParse(FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).FileVersion, out var currentVersion);
             Version.TryParse(FileVersionInfo.GetVersionInfo(targetExe).FileVersion, out var installedVersion);
             currentVersion ??= new Version();
@@ -129,15 +129,15 @@ public partial class App : Application
                 return;
 
             var answer = MessageBox.Show(
-                $"Найден установленный DED Launcher {installedVersion.Major}.{installedVersion.Minor}.{installedVersion.Build}:\n" +
+                $"cyr1" +
                 $"{installedDir}\n\n" +
-                $"Эта копия новее ({currentVersion.Major}.{currentVersion.Minor}.{currentVersion.Build}). " +
-                $"Обновить установленный лаунчер?",
+                $"cyr2" +
+                $"cyr3",
                 "DED Launcher", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (answer != MessageBoxResult.Yes)
                 return;
 
-            // Копия-обновщик перенесёт файлы и запустит установленную версию
+            
             var updaterPath = Path.Combine(Path.GetTempPath(), "DEDUpdater.exe");
             File.Copy(Environment.ProcessPath!, updaterPath, true);
             Process.Start(new ProcessStartInfo
@@ -160,10 +160,10 @@ public partial class App : Application
         catch { }
     }
 
-    /// <summary>
-    /// Отдельный процесс-установщик: переносит файлы новой копии поверх
-    /// существующей установки и запускает обновлённый лаунчер.
-    /// </summary>
+    
+    
+    
+    
     private static class Updater
     {
         public static void CopyFolder(string srcDir, string dstDir)
@@ -179,10 +179,10 @@ public partial class App : Application
                         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
                         File.Copy(file, dest, true);
                     }
-                    catch { } // файл занят — пропускаем
+                    catch { } 
                 }
 
-                // Установкой теперь считается целевая папка
+                
                 var markerPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     ".dedlauncher", "install.json");
@@ -204,10 +204,10 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Читает настройки производительности из settings.json ДО создания окна —
-    /// программный рендеринг и режим слабого ПК действуют с первого кадра.
-    /// </summary>
+    
+    
+    
+    
     private void ApplyPerfSettings()
     {
         try

@@ -47,20 +47,20 @@ public class MainViewModel : BaseViewModel
         InitServerData();
     }
 
-    // ─── Account ───
+    
     private AccountInfo _account = new();
     public AccountInfo Account { get => _account; set { SetProperty(ref _account, value); OnPropertyChanged(nameof(AccountTypeLabel)); OnPropertyChanged(nameof(ChipName)); OnPropertyChanged(nameof(ChipTypeLabel)); OnPropertyChanged(nameof(CanUseFriendsChat)); OnPropertyChanged(nameof(ChatLockReason)); } }
-    private string _accountStatus = "Не в сети";
+    private string _accountStatus = "cyr1";
     public string AccountStatus { get => _accountStatus; set => SetProperty(ref _accountStatus, value); }
     public string AccountTypeLabel => Account.AccountType switch
     {
-        "msa" => "Лицензия",
-        _ => "Пират"
+        "msa" => "cyr2",
+        _ => "cyr3"
     };
     private string _offlineUsername = "Player";
     public string OfflineUsername { get => _offlineUsername; set => SetProperty(ref _offlineUsername, value); }
 
-    // ─── Настройки как в LabyMod ───
+    
     private bool _multipleInstances;
     public bool MultipleInstances { get => _multipleInstances; set => SetProperty(ref _multipleInstances, value); }
 
@@ -70,7 +70,7 @@ public class MainViewModel : BaseViewModel
     private bool _ipv4Only = true;
     public bool Ipv4Only { get => _ipv4Only; set => SetProperty(ref _ipv4Only, value); }
 
-    // ─── Производительность ───
+    
     private bool _lowEndMode;
     public bool LowEndMode
     {
@@ -99,51 +99,51 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    // ─── Самообновление ───
-    /// <summary>Канал обновлений (зашит — игроку не нужно ничего настраивать).</summary>
+    
+    
     private const string UpdateChannel = "NeiroDEDmod";
 
-    private string _updateStatus = "Проверка не выполнялась";
+    private string _updateStatus = "cyr4";
     public string UpdateStatus { get => _updateStatus; set => SetProperty(ref _updateStatus, value); }
 
     public string VersionLabel => App.VersionLabel;
 
     public string UpdateChannelLink => $"https://t.me/{UpdateChannel}";
 
-    /// <summary>
-    /// Проверка обновлений в Telegram-канале. Новые версии раздаются вручную:
-    /// лаунчер только сообщает об обновлении и открывает ссылку в браузере.
-    /// manual=true — кнопка в настройках, manual=false — тихая проверка при старте.
-    /// </summary>
+    
+    
+    
+    
+    
     public async Task CheckForUpdatesAsync(bool manual)
     {
-        UpdateStatus = "Проверка обновлений...";
+        UpdateStatus = "cyr5";
         try
         {
             var info = await UpdateService.CheckTgAsync(UpdateChannel);
             if (info == null)
             {
-                UpdateStatus = "Постов #update не найдено";
-                if (manual) ShowToast("Обновлений не найдено");
+                UpdateStatus = "cyr6";
+                if (manual) ShowToast("cyr7");
                 return;
             }
 
             if (UpdateService.CompareVersions(info.Version, App.VersionLabel) <= 0)
             {
-                UpdateStatus = $"У вас последняя версия ({App.VersionLabel})";
-                if (manual) ShowToast($"У вас последняя версия {App.VersionLabel} ✓");
+                UpdateStatus = $"cyr8";
+                if (manual) ShowToast($"cyr9");
                 return;
             }
 
-            UpdateStatus = $"Доступна версия {info.Version} (у вас {App.VersionLabel}) — скачайте в Telegram/Discord";
+            UpdateStatus = $"cyr10";
 
             if (manual)
             {
                 var answer = MessageBox.Show(
-                    $"Доступна новая версия: {info.Version}\nСейчас: {App.VersionLabel}\n\n" +
-                    "Скачайте её в нашем Telegram-канале или Discord и просто запустите — " +
-                    "лаунчер сам предложит обновить установленную копию.\n\nОткрыть ссылку на скачивание?",
-                    "Обновление DED Launcher", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    $"cyr11" +
+                    "cyr12" +
+                    "cyr13",
+                    "cyr14", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer == MessageBoxResult.Yes && !string.IsNullOrEmpty(info.Url))
                 {
                     try { Process.Start(new ProcessStartInfo(info.Url) { UseShellExecute = true }); }
@@ -152,29 +152,29 @@ public class MainViewModel : BaseViewModel
             }
             else
             {
-                ShowToast($"Доступна новая версия {info.Version} — скачайте в Telegram/Discord");
-                ConsoleLines.Add($"[ОБНОВЛЕНИЕ] Доступна версия {info.Version}");
+                ShowToast($"cyr15");
+                ConsoleLines.Add($"cyr16");
             }
         }
         catch (Exception ex)
         {
-            UpdateStatus = "Ошибка проверки обновлений";
+            UpdateStatus = "cyr17";
             if (manual)
             {
-                Status = $"Ошибка проверки обновлений: {ex.Message}";
-                ShowToast("Не удалось проверить обновления");
+                Status = $"cyr18";
+                ShowToast("cyr19");
             }
         }
     }
 
-    // ─── Discord ───
+    
     private string _discordClientId = "";
     public string DiscordClientId { get => _discordClientId; set => SetProperty(ref _discordClientId, value); }
 
     private string _discordClientSecret = "";
     public string DiscordClientSecret { get => _discordClientSecret; set => SetProperty(ref _discordClientSecret, value); }
 
-    /// <summary>Игра отвязана от лаунчера (лаунчер закрылся, игра продолжает работать).</summary>
+    
     public bool GameDetached { get; set; }
     private bool _autoLogin = true;
     public bool AutoLogin { get => _autoLogin; set => SetProperty(ref _autoLogin, value); }
@@ -194,7 +194,7 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    // ─── Theme ───
+    
     public List<ThemePalette> ThemesList => ThemeManager.Themes;
     private string _selectedTheme = "Red";
     public string SelectedTheme
@@ -203,7 +203,7 @@ public class MainViewModel : BaseViewModel
         set { if (SetProperty(ref _selectedTheme, value)) ThemeManager.ApplyTheme(value); }
     }
 
-    // ─── Skin ───
+    
     private ImageSource? _skinHeadPreview;
     public ImageSource? SkinHeadPreview
     {
@@ -218,10 +218,10 @@ public class MainViewModel : BaseViewModel
         set { SetProperty(ref _accountAvatar, value); OnPropertyChanged(nameof(ChipAvatar)); }
     }
 
-    /// <summary>Аватарка в шапке: Discord-аватар, если есть, иначе превью скина.</summary>
+    
     public ImageSource? ChipAvatar => _accountAvatar ?? _skinHeadPreview;
 
-    // ─── Discord-профиль (авторизация ЛАУНЧЕРА, не аккаунт Minecraft) ───
+    
     private DiscordAuthService.DiscordUser? _discordProfile;
     public DiscordAuthService.DiscordUser? DiscordProfile
     {
@@ -241,18 +241,18 @@ public class MainViewModel : BaseViewModel
     }
     public bool HasDiscordProfile => _discordProfile != null;
 
-    /// <summary>Друзья доступны только с подтверждённой личностью (Discord или Microsoft) —
-    /// иначе любой может назваться чужим ником через оффлайн-аккаунт.</summary>
+    
+    
     public bool CanUseFriendsChat => _discordProfile != null || Account.AccountType == "msa";
 
     public string ChatLockReason => _discordProfile != null ? ""
         : (Account.AccountType == "msa" ? ""
-            : "Чат друзей доступен только после входа через Discord или Microsoft — оффлайн-ник можно подделать.");
+            : "cyr20");
 
-    /// <summary>Имя в шапке: Discord-ник, если авторизован, иначе ник Minecraft.</summary>
+    
     public string ChipName => _discordProfile?.Username ?? Account.Username;
 
-    /// <summary>Тип в шапке: «Discord», если авторизован, иначе Лицензия/Пират.</summary>
+    
     public string ChipTypeLabel => _discordProfile != null ? "Discord" : AccountTypeLabel;
 
     private static string DiscordProfilePath => Path.Combine(MinecraftPathHelper.BaseDir, "discord.json");
@@ -284,10 +284,10 @@ public class MainViewModel : BaseViewModel
     {
         DiscordProfile = null;
         SaveDiscordProfile();
-        ShowToast("Выход из Discord выполнен");
+        ShowToast("cyr21");
     }
 
-    // ─── ДРУЗЬЯ ───
+    
 
     public ObservableCollection<FriendEntry> Friends { get; } = new();
     public ObservableCollection<FriendEntry> FriendsView { get; } = new();
@@ -322,7 +322,7 @@ public class MainViewModel : BaseViewModel
         {
             if (SetProperty(ref _chatInput, value))
             {
-                // Отправляем «печатает...» не чаще раза в 2 секунды
+                
                 if (!string.IsNullOrEmpty(value) && SelectedFriend != null && _friends != null &&
                     DateTime.UtcNow - _lastTypingSent > TimeSpan.FromSeconds(2))
                 {
@@ -423,7 +423,7 @@ public class MainViewModel : BaseViewModel
     private static string FriendChatFile(string code) => Path.Combine(ChatsDir, $"f_{code}.json");
     private static string GroupChatFile(string code) => Path.Combine(ChatsDir, $"g_{code}.json");
 
-    // ─── Локальная история чатов ───
+    
 
     private void LoadFriendChat(string code)
     {
@@ -471,20 +471,20 @@ public class MainViewModel : BaseViewModel
         catch { }
     }
 
-    /// <summary>Очищает историю текущего чата (друга или группы) с диска.</summary>
+    
     public void ClearChat()
     {
         if (SelectedFriend != null)
         {
             ChatLines.Clear();
             try { File.Delete(FriendChatFile(SelectedFriend.Code)); } catch { }
-            ShowToast("Чат очищен");
+            ShowToast("cyr22");
         }
         else if (SelectedGroup != null)
         {
             GroupChatLines.Clear();
             try { File.Delete(GroupChatFile(SelectedGroup.Code)); } catch { }
-            ShowToast("Чат группы очищен");
+            ShowToast("cyr23");
         }
     }
 
@@ -543,7 +543,7 @@ public class MainViewModel : BaseViewModel
         RebuildFriendsView();
     }
 
-    /// <summary>Отфильтрованный и отсортированный список: онлайн сверху, затем по имени.</summary>
+    
     private void RebuildFriendsView()
     {
         var q = (_friendSearch ?? "").Trim().ToLower();
@@ -626,10 +626,10 @@ public class MainViewModel : BaseViewModel
         _friendsPulseTimer.Start();
     }
 
-    /// <summary>
-    /// Модуль подчинения: статусы копии лаунчера для DEDAdmin, бан-лист,
-    /// анонсы и ответы на диагностику.
-    /// </summary>
+    
+    
+    
+    
     private void StartAdmin()
     {
         if (_admin != null) return;
@@ -644,8 +644,8 @@ public class MainViewModel : BaseViewModel
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                ShowToast($"Анонс: {text}");
-                ConsoleLines.Add($"[АНОНС] {text}");
+                ShowToast($"cyr24");
+                ConsoleLines.Add($"cyr25");
             });
         };
         _ = _admin.StartAsync();
@@ -668,7 +668,7 @@ public class MainViewModel : BaseViewModel
         if (server != _lastPresenceServer)
         {
             _lastPresenceServer = server;
-            Status = string.IsNullOrEmpty(server) ? "Вы в меню" : $"Вы играете на {server}";
+            Status = string.IsNullOrEmpty(server) ? "cyr26" : $"cyr27";
         }
         await _friends.PublishPresenceAsync(server, string.IsNullOrWhiteSpace(_myStatus) ? null : _myStatus.Trim());
     }
@@ -763,7 +763,7 @@ public class MainViewModel : BaseViewModel
             if (FriendRequests.Any(r => r.Code == code)) return;
             FriendRequests.Add(new FriendEntry { Code = code, Name = name });
             OnPropertyChanged(nameof(HasFriendRequests));
-            ShowToast($"Заявка в друзья от {(string.IsNullOrEmpty(name) ? code : name)}");
+            ShowToast($"cyr28");
         });
     }
 
@@ -776,7 +776,7 @@ public class MainViewModel : BaseViewModel
             Friends.Add(friend);
             SaveFriends();
             _ = _friends!.AddFriendAsync(code);
-            ShowToast($"{(string.IsNullOrEmpty(name) ? code : name)} принял(а) заявку ✓");
+            ShowToast($"cyr29");
         });
     }
 
@@ -799,7 +799,7 @@ public class MainViewModel : BaseViewModel
                 UpdateUnread();
                 PlayMessageSound();
             }
-            ShowToast($"{sender} зовёт на сервер {server}");
+            ShowToast($"cyr30");
         });
     }
 
@@ -860,16 +860,16 @@ public class MainViewModel : BaseViewModel
 
     public async Task SendFriendRequestAsync()
     {
-        if (!CanUseFriendsChat) { ShowToast("Войдите через Discord или Microsoft"); return; }
+        if (!CanUseFriendsChat) { ShowToast("cyr31"); return; }
         var code = FriendCodeInput.Trim().ToUpper();
-        if (code.Length < 4) { Status = "Введите код друга"; return; }
-        if (code == _myFriendCode) { ShowToast("Это ваш собственный код"); return; }
-        if (Friends.Any(f => f.Code == code)) { ShowToast("Уже в друзьях"); return; }
+        if (code.Length < 4) { Status = "cyr32"; return; }
+        if (code == _myFriendCode) { ShowToast("cyr33"); return; }
+        if (Friends.Any(f => f.Code == code)) { ShowToast("cyr34"); return; }
 
         StartFriends();
         await _friends!.SendRequestAsync(code);
         FriendCodeInput = "";
-        ShowToast("Заявка отправлена ✓");
+        ShowToast("cyr35");
     }
 
     public async Task AcceptRequestAsync(FriendEntry request)
@@ -882,7 +882,7 @@ public class MainViewModel : BaseViewModel
         SaveFriends();
         StartFriends();
         await _friends!.AcceptRequestAsync(request.Code);
-        ShowToast($"{friend.DisplayName} добавлен(а) в друзья ✓");
+        ShowToast($"cyr36");
     }
 
     public void DeclineRequest(FriendEntry request)
@@ -899,13 +899,13 @@ public class MainViewModel : BaseViewModel
         Friends.Remove(friend);
         SaveFriends();
         if (SelectedFriend == friend) SelectedFriend = null;
-        ShowToast("Друг удалён");
+        ShowToast("cyr37");
     }
 
     public void RenameFriend(FriendEntry friend)
     {
         if (friend == null) return;
-        var newName = PromptText("Переименовать друга", friend.DisplayName);
+        var newName = PromptText("cyr38", friend.DisplayName);
         if (string.IsNullOrWhiteSpace(newName)) return;
         friend.PinnedName = newName.Trim();
         SaveFriends();
@@ -916,7 +916,7 @@ public class MainViewModel : BaseViewModel
         try
         {
             System.Windows.Clipboard.SetText(MyFriendCode);
-            ShowToast("Код скопирован ✓");
+            ShowToast("cyr39");
         }
         catch { }
     }
@@ -927,21 +927,21 @@ public class MainViewModel : BaseViewModel
         var server = ReadGamePresence();
         if (string.IsNullOrEmpty(server) || server == "singleplayer")
         {
-            ShowToast("Вы не на сервере — некуда звать");
+            ShowToast("cyr40");
             return;
         }
         StartFriends();
         await _friends!.InviteToServerAsync(friend.Code, server);
-        ShowToast($"Приглашение отправлено: {server}");
+        ShowToast($"cyr41");
     }
 
     public async Task SendChatAsync()
     {
-        if (!CanUseFriendsChat) { ShowToast("Войдите через Discord или Microsoft"); return; }
+        if (!CanUseFriendsChat) { ShowToast("cyr42"); return; }
         var text = ChatInput.Trim();
         if (string.IsNullOrEmpty(text) || SelectedFriend == null) return;
         await _friends!.SendMessageAsync(SelectedFriend.Code, text);
-        ChatLines.Add(new ChatLine { Sender = "Вы", Text = text, IsMine = true });
+        ChatLines.Add(new ChatLine { Sender = "cyr43", Text = text, IsMine = true });
         while (ChatLines.Count > 300) ChatLines.RemoveAt(0);
         SaveFriendChat(SelectedFriend.Code);
         ChatInput = "";
@@ -949,11 +949,11 @@ public class MainViewModel : BaseViewModel
 
     public async Task SendGroupChatAsync()
     {
-        if (!CanUseFriendsChat) { ShowToast("Войдите через Discord или Microsoft"); return; }
+        if (!CanUseFriendsChat) { ShowToast("cyr44"); return; }
         var text = GroupChatInput.Trim();
         if (string.IsNullOrEmpty(text) || SelectedGroup == null) return;
         await _friends!.SendGroupMessageAsync(SelectedGroup.Code, text);
-        GroupChatLines.Add(new ChatLine { Sender = "Вы", Text = text, IsMine = true });
+        GroupChatLines.Add(new ChatLine { Sender = "cyr45", Text = text, IsMine = true });
         while (GroupChatLines.Count > 300) GroupChatLines.RemoveAt(0);
         SaveGroupChat(SelectedGroup.Code);
         GroupChatInput = "";
@@ -961,7 +961,7 @@ public class MainViewModel : BaseViewModel
 
     public async Task CreateGroupAsync()
     {
-        var name = PromptText("Название группы", "");
+        var name = PromptText("cyr46", "");
         if (string.IsNullOrWhiteSpace(name)) return;
         var code = GenerateFriendCode();
         var group = new GroupChat { Code = code, Name = name.Trim() };
@@ -969,21 +969,21 @@ public class MainViewModel : BaseViewModel
         SaveGroups();
         StartFriends();
         await _friends!.JoinGroupAsync(code);
-        ShowToast($"Группа создана. Код: {code}");
+        ShowToast($"cyr47");
     }
 
     public async Task JoinGroupAsync()
     {
         var code = GroupCodeInput.Trim().ToUpper();
-        if (code.Length < 4) { ShowToast("Введите код группы"); return; }
-        if (Groups.Any(g => g.Code == code)) { ShowToast("Вы уже в этой группе"); return; }
+        if (code.Length < 4) { ShowToast("cyr48"); return; }
+        if (Groups.Any(g => g.Code == code)) { ShowToast("cyr49"); return; }
         var group = new GroupChat { Code = code };
         Groups.Add(group);
         SaveGroups();
         StartFriends();
         await _friends!.JoinGroupAsync(code);
         GroupCodeInput = "";
-        ShowToast("Группа добавлена ✓");
+        ShowToast("cyr50");
     }
 
     public void LeaveGroup(GroupChat group)
@@ -993,7 +993,7 @@ public class MainViewModel : BaseViewModel
         Groups.Remove(group);
         SaveGroups();
         if (SelectedGroup == group) SelectedGroup = null;
-        ShowToast("Вы вышли из группы");
+        ShowToast("cyr51");
     }
 
     public void JoinFriendServer(FriendEntry friend)
@@ -1009,15 +1009,15 @@ public class MainViewModel : BaseViewModel
             port = p;
         }
 
-        var server = new ServerEntry { Name = address, Address = address, Port = port, Description = $"Сервер друга" };
+        var server = new ServerEntry { Name = address, Address = address, Port = port, Description = $"cyr52" };
         _ = LaunchAsync(server);
     }
 
-    /// <summary>
-    /// Кнопка «Играть» на карточке приглашения в чате.
-    /// Если игра уже запущена — закрываем текущую сессию и запускаем заново
-    /// с подключением к серверу (ваниль умеет подключаться при старте).
-    /// </summary>
+    
+    
+    
+    
+    
     public async Task JoinInviteServer(ChatLine line)
     {
         if (line == null || string.IsNullOrEmpty(line.InviteServer)) return;
@@ -1035,17 +1035,17 @@ public class MainViewModel : BaseViewModel
         if (IsGameRunning)
         {
             var answer = MessageBox.Show(
-                $"Игра уже запущена.\n\nЧтобы подключиться к {line.InviteServer}, текущая сессия будет закрыта, " +
-                "и игра запустится заново с подключением к серверу.\n\nПродолжить?",
+                $"cyr53" +
+                "cyr54",
                 "DED Launcher", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes) return;
 
             StopGame();
             IsGameRunning = false;
-            await Task.Delay(800); // даём игре закрыться и освободить файлы
+            await Task.Delay(800); 
         }
 
-        var server = new ServerEntry { Name = address, Address = address, Port = port, Description = "Приглашение друга" };
+        var server = new ServerEntry { Name = address, Address = address, Port = port, Description = "cyr55" };
         _ = LaunchAsync(server);
     }
 
@@ -1075,7 +1075,7 @@ public class MainViewModel : BaseViewModel
         };
         var ok = new Button
         {
-            Content = "ОК",
+            Content = "cyr56",
             Width = 90,
             Height = 30,
             Background = new SolidColorBrush(Color.FromRgb(0xB3, 0x00, 0x00)),
@@ -1138,7 +1138,7 @@ public class MainViewModel : BaseViewModel
     private ImageSource? _skinFullPreview;
     public ImageSource? SkinFullPreview { get => _skinFullPreview; set => SetProperty(ref _skinFullPreview, value); }
 
-    private string _skinStatus = "Скин не установлен";
+    private string _skinStatus = "cyr57";
     public string SkinStatus { get => _skinStatus; set => SetProperty(ref _skinStatus, value); }
 
     public ICommand SelectSkinCmd { get; private set; } = null!;
@@ -1151,7 +1151,7 @@ public class MainViewModel : BaseViewModel
     private bool _isLoggingIn;
     public bool IsLoggingIn { get => _isLoggingIn; set => SetProperty(ref _isLoggingIn, value); }
 
-    // ─── Navigation ───
+    
     private bool _homeActive, _playActive, _modsActive, _consoleActive, _setupActive;
     public bool HomeActive { get => _homeActive; set { SetProperty(ref _homeActive, value); OnPropertyChanged(nameof(HomeActiveTag)); OnPropertyChanged(nameof(IsHomePage)); } }
     public bool PlayActive { get => _playActive; set { SetProperty(ref _playActive, value); OnPropertyChanged(nameof(PlayActiveTag)); OnPropertyChanged(nameof(IsFixedPage)); } }
@@ -1163,16 +1163,16 @@ public class MainViewModel : BaseViewModel
     public bool FriendsActive { get => _friendsActive; set { SetProperty(ref _friendsActive, value); OnPropertyChanged(nameof(FriendsActiveTag)); OnPropertyChanged(nameof(IsFixedPage)); } }
     public string FriendsActiveTag => FriendsActive ? "Active" : "";
 
-    /// <summary>Страницы, которые влезают без прокрутки окна (моды, запуск, друзья).</summary>
+    
     public bool IsFixedPage => _modsActive || _playActive || _friendsActive;
 
-    /// <summary>Главная живёт в первом скролле.</summary>
+    
     public bool IsHomePage => _homeActive;
 
-    /// <summary>Консоль/фото/настройки живут во втором скролле.</summary>
+    
     public bool IsSecondaryPage => _consoleActive || _screenshotsActive || _setupActive;
 
-    // ─── Секции настроек (как в LabyMod) ───
+    
     private int _settingsSection;
     public int SettingsSection
     {
@@ -1214,7 +1214,7 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    // ─── Versions ───
+    
     public ObservableCollection<string> VersionIds { get; } = new();
     public ObservableCollection<string> InstalledVersionIds { get; } = new();
     public ObservableCollection<VersionOption> VersionOptions { get; } = new();
@@ -1244,7 +1244,7 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    /// <summary>Загрузчик активного профиля (Vanilla / Fabric / Forge).</summary>
+    
     public string SelectedLoader
     {
         get => CurrentProfile?.ModLoader ?? "Vanilla";
@@ -1292,7 +1292,7 @@ public class MainViewModel : BaseViewModel
 
         foreach (var v in all)
         {
-            // Категории: 0=Все, 1=Релизы, 2=Снапшоты, 3=Старые (alpha/beta)
+            
             var type = v.Type ?? "release";
             if (_versionCategory == 1 && type != "release") continue;
             if (_versionCategory == 2 && type != "snapshot") continue;
@@ -1305,7 +1305,7 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    // ─── Profile ───
+    
     public ObservableCollection<LaunchProfile> Profiles { get; } = new();
     private LaunchProfile? _currentProfile;
     public LaunchProfile? CurrentProfile
@@ -1328,10 +1328,10 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// Игровая папка профиля. Самый старый профиль использует общую папку minecraft/,
-    /// остальные изолированы в profiles/{id}/game (свои моды и миры).
-    /// </summary>
+    
+    
+    
+    
     private string GetProfileGameDir(LaunchProfile p)
     {
         if (!string.IsNullOrEmpty(p.GameDir))
@@ -1370,51 +1370,51 @@ public class MainViewModel : BaseViewModel
         {
             if (EditModLoader == "Fabric")
             {
-                Status = "Загрузка версий Fabric...";
+                Status = "cyr58";
                 var versions = await _mods.GetFabricLoadersForMcAsync(CurrentProfile.VersionId);
                 foreach (var v in versions.Take(30)) AvailableLoaderVersions.Add(v);
                 if (AvailableLoaderVersions.Count > 0)
                 {
                     SelectedLoaderVersion = AvailableLoaderVersions[0];
-                    Status = $"Версии Fabric: {AvailableLoaderVersions.Count}";
+                    Status = $"cyr59";
                 }
-                else Status = "Нет версий Fabric для " + CurrentProfile.VersionId;
+                else Status = "cyr60" + CurrentProfile.VersionId;
             }
             else if (EditModLoader == "Forge")
             {
-                Status = "Загрузка версий Forge...";
+                Status = "cyr61";
                 var versions = await _mods.GetForgeVersionsAsync(CurrentProfile.VersionId);
                 foreach (var v in versions.Select(x => x.Version).Take(30)) AvailableLoaderVersions.Add(v);
                 if (AvailableLoaderVersions.Count > 0)
                 {
                     SelectedLoaderVersion = AvailableLoaderVersions[0];
-                    Status = $"Версии Forge: {AvailableLoaderVersions.Count}";
+                    Status = $"cyr62";
                 }
-                else Status = "Нет версий Forge для " + CurrentProfile.VersionId;
+                else Status = "cyr63" + CurrentProfile.VersionId;
             }
             else if (EditModLoader == "OptiFine")
             {
-                Status = "Загрузка версий OptiFine...";
+                Status = "cyr64";
                 var versions = await _mods.GetOptiFineVersionsAsync(CurrentProfile.VersionId);
                 foreach (var v in versions.Take(30))
                     AvailableLoaderVersions.Add($"{v.Type}_{v.Patch}");
                 if (AvailableLoaderVersions.Count > 0)
                 {
-                    // BMCLAPI отдаёт версии по возрастанию — последняя в списке самая свежая
+                    
                     SelectedLoaderVersion = AvailableLoaderVersions[^1];
-                    Status = $"Версии OptiFine: {AvailableLoaderVersions.Count}";
+                    Status = $"cyr65";
                 }
-                else Status = "Нет версий OptiFine для " + CurrentProfile.VersionId;
+                else Status = "cyr66" + CurrentProfile.VersionId;
             }
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr67"; }
     }
 
-    // ─── RAM (system-aware) ───
+    
     public long SystemRamMb => SystemInfo.TotalRamMb;
     public int MaxRamLimitMb => SystemInfo.MaxAllocatableMb;
     public int RecommendedRamMb => SystemInfo.RecommendedRamMb;
-    public string RamInfo => $"У вас {SystemRamMb / 1024} ГБ ОЗУ · рекомендуем {RecommendedRamMb} МБ · макс {MaxRamLimitMb} МБ";
+    public string RamInfo => $"cyr68";
 
     public int RamSliderMin => 1024;
 
@@ -1439,23 +1439,23 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    // ─── Java ───
+    
     public ObservableCollection<JavaInfo> JavaInstallations { get; } = new();
 
-    // ─── Launch History ───
+    
     public ObservableCollection<LaunchHistoryEntry> LaunchHistory { get; } = new();
 
-    // ─── Servers ───
+    
     public ObservableCollection<ServerEntry> ServersList { get; } = new();
     private string _serverInput = "";
     public string ServerInput { get => _serverInput; set => SetProperty(ref _serverInput, value); }
     private bool _serversRefreshing;
     public bool ServersRefreshing { get => _serversRefreshing; set => SetProperty(ref _serversRefreshing, value); }
 
-    // ─── News ───
+    
     public ObservableCollection<NewsItem> NewsItems { get; } = new();
 
-    // ─── Mods ───
+    
     public ObservableCollection<ModInfo> InstalledMods { get; } = new();
     public ObservableCollection<ModrinthMod> ModrinthResults { get; } = new();
     public ObservableCollection<CurseForgeMod> CurseForgeResults { get; } = new();
@@ -1473,7 +1473,7 @@ public class MainViewModel : BaseViewModel
     public bool IsModrinthSource => _modSource == "Modrinth";
     public bool IsCurseForgeSource => _modSource == "CurseForge";
 
-    // ─── Под-вкладки модов ───
+    
     private int _modsSubTab;
     public int ModsSubTab
     {
@@ -1487,7 +1487,7 @@ public class MainViewModel : BaseViewModel
                 OnPropertyChanged(nameof(IsShadersSubTab));
                 OnPropertyChanged(nameof(IsServersSubTab));
 
-                // Автозагрузка списков при открытии вкладки
+                
                 switch (value)
                 {
                     case 1:
@@ -1517,7 +1517,7 @@ public class MainViewModel : BaseViewModel
     public ObservableCollection<InstalledPackItem> InstalledResourcePacks { get; } = new();
     public ObservableCollection<InstalledPackItem> InstalledShaders { get; } = new();
 
-    // ─── Источники для ресурспаков/шейдеров ───
+    
     private string _rpSource = "Modrinth";
     public string RpSource
     {
@@ -1536,7 +1536,7 @@ public class MainViewModel : BaseViewModel
     public bool IsShaderModrinth => _shaderSource == "Modrinth";
     public bool IsShaderCurseForge => _shaderSource == "CurseForge";
 
-    // ─── Тумблеры «Браузер / Установленные» ───
+    
     private bool _showInstalledMods;
     public bool ShowInstalledMods
     {
@@ -1564,7 +1564,7 @@ public class MainViewModel : BaseViewModel
     public bool IsShaderBrowserView => !_showInstalledShaders;
     public bool IsShaderInstalledView => _showInstalledShaders;
 
-    // ─── Пагинация Modrinth (бесконечная прокрутка) ───
+    
     private int _modOffset;
     private int _modTotalHits;
     public bool HasMoreMods => _modOffset < _modTotalHits;
@@ -1575,7 +1575,7 @@ public class MainViewModel : BaseViewModel
     private int _shaderTotalHits;
     public bool HasMoreShaders => _shaderOffset < _shaderTotalHits;
 
-    // ─── Каталог CurseForge: чанковая подгрузка (CF не умеет пагинацию) ───
+    
     private const int CfChunkSize = 12;
     private List<CurseForgeMod> _allCfMods = new();
     private List<CurseForgeMod> _allCfResourcePacks = new();
@@ -1587,7 +1587,7 @@ public class MainViewModel : BaseViewModel
     public bool HasMoreCfResourcePacks => _rpCfOffset < _allCfResourcePacks.Count;
     public bool HasMoreCfShaders => _shaderCfOffset < _allCfShaders.Count;
 
-    // ─── Скриншоты ───
+    
     public ObservableCollection<ScreenshotItem> Screenshots { get; } = new();
     private bool _screenshotsActive;
     public bool ScreenshotsActive
@@ -1599,7 +1599,7 @@ public class MainViewModel : BaseViewModel
 
     public ICommand NavScreenshotsCmd { get; private set; } = null!;
 
-    // ─── Режим отображения модов: 0=1 колонка, 1=2 колонки, 2=3 колонки, 3=сетка ───
+    
     private int _modViewMode = 3;
     public int ModViewMode
     {
@@ -1622,13 +1622,13 @@ public class MainViewModel : BaseViewModel
     };
     public bool IsGridMode => _modViewMode == 3;
 
-    // ─── Logs ───
+    
     public ObservableCollection<string> ConsoleLines { get; } = new();
     private string _cmdInput = "";
     public string CmdInput { get => _cmdInput; set => SetProperty(ref _cmdInput, value); }
 
-    // ─── Status ───
-    private string _status = "Готов";
+    
+    private string _status = "cyr69";
     public string Status
     {
         get => _status;
@@ -1653,7 +1653,7 @@ public class MainViewModel : BaseViewModel
         else
             Application.Current.Dispatcher.Invoke(() => Add(line));
 
-        // Пишем в файл для диагностики
+        
         try
         {
             File.AppendAllText(Path.Combine(MinecraftPathHelper.BaseDir, "launcher.log"), line + Environment.NewLine);
@@ -1672,10 +1672,10 @@ public class MainViewModel : BaseViewModel
 
     public double DlProgress { get => _dlProgress; set { if (SetProperty(ref _dlProgress, value)) OnPropertyChanged(nameof(DlIndeterminate)); } }
 
-    /// <summary>
-    /// Сообщает прогресс загрузки. Отображаемое значение плавно догоняет
-    /// целевое — проценты не дёргаются при быстрых отчётах о байтах.
-    /// </summary>
+    
+    
+    
+    
     public void ReportProgress(double pct)
     {
         _dlProgressTarget = Math.Clamp(pct, 0, 100);
@@ -1687,7 +1687,7 @@ public class MainViewModel : BaseViewModel
         }
         if (_dlProgress > _dlProgressTarget)
         {
-            // Новый файл в паке — мягко сбрасываем к его началу, но не в ноль
+            
             DlProgress = _dlProgressTarget;
         }
         EnsureSmoothTimer();
@@ -1717,13 +1717,13 @@ public class MainViewModel : BaseViewModel
     private string _dlFile = "";
     public string DlFile { get => _dlFile; set { if (SetProperty(ref _dlFile, value)) { OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(DlIndeterminate)); } } }
 
-    /// <summary>Идёт именно загрузка файлов (а не поиск).</summary>
+    
     public bool IsDownloading => IsBusy && !string.IsNullOrEmpty(DlFile);
 
-    /// <summary>Бегущая полоска, пока нет точного процента загрузки.</summary>
+    
     public bool DlIndeterminate => IsDownloading && DlProgress <= 0;
 
-    // ─── Toast-уведомления ───
+    
     private string _toastText = "";
     public string ToastText { get => _toastText; set => SetProperty(ref _toastText, value); }
 
@@ -1749,20 +1749,20 @@ public class MainViewModel : BaseViewModel
         _toastTimer.Start();
     }
 
-    /// <summary>
-    /// Красивое завершение загрузки: полоска дотягивается до 100%,
-    /// показывается «Готово ✓» и панель плавно прячется.
-    /// </summary>
+    
+    
+    
+    
     private async void FinishDownload()
     {
         DlProgress = 100;
-        DlFile = "Готово ✓";
+        DlFile = "cyr70";
         await Task.Delay(900);
         IsBusy = false;
         DlFile = "";
     }
 
-    // ─── Commands ───
+    
     public ICommand NavHomeCmd { get; private set; } = null!;
     public ICommand NavPlayCmd { get; private set; } = null!;
     public ICommand NavModsCmd { get; private set; } = null!;
@@ -1829,15 +1829,15 @@ public class MainViewModel : BaseViewModel
         LoadInstalledResourcePacks();
         LoadInstalledShaders();
 
-        NewsItems.Add(new() { Title = "Обновление лаунчера v0.2.0", Date = "12 авг 2026" });
-        NewsItems.Add(new() { Title = "Добавлена поддержка Fabric", Date = "11 авг 2026" });
-        NewsItems.Add(new() { Title = "Интеграция Modrinth API", Date = "10 авг 2026" });
-        NewsItems.Add(new() { Title = "Новый дизайн интерфейса", Date = "9 авг 2026" });
+        NewsItems.Add(new() { Title = "cyr71", Date = "cyr72" });
+        NewsItems.Add(new() { Title = "cyr73", Date = "cyr74" });
+        NewsItems.Add(new() { Title = "cyr75", Date = "cyr76" });
+        NewsItems.Add(new() { Title = "cyr77", Date = "cyr78" });
     }
 
-    // ═══════════════ СЕРВЕРА ═══════════════
+    
 
-    /// <summary>Последние серверы (сортировка по времени захода) для правой панели.</summary>
+    
     public IEnumerable<ServerEntry> RecentServers =>
         ServersList.Where(s => s.LastPlayed > DateTime.MinValue)
                    .OrderByDescending(s => s.LastPlayed)
@@ -1858,7 +1858,7 @@ public class MainViewModel : BaseViewModel
         }
         catch { }
 
-        // Подтягиваем сервера из самого Minecraft (servers.dat текущего профиля) — в фоне
+        
         var serversDat = Path.Combine(_mods.GameDir, "servers.dat");
         _ = Task.Run(() => NbtServersReader.ReadServersDat(serversDat)).ContinueWith(t =>
         {
@@ -1875,7 +1875,7 @@ public class MainViewModel : BaseViewModel
                         Name = s.Name,
                         Address = s.Ip,
                         Port = s.Port,
-                        Description = "Из списка Minecraft"
+                        Description = "cyr79"
                     };
                     if (!string.IsNullOrEmpty(s.IconBase64))
                         entry.Icon = DecodeServerIcon(s.IconBase64);
@@ -1915,7 +1915,7 @@ public class MainViewModel : BaseViewModel
 
         if (ServersList.Any(s => s.Address.Equals(address, StringComparison.OrdinalIgnoreCase) && s.Port == port))
         {
-            Status = "Сервер уже в списке";
+            Status = "cyr80";
             ServerInput = "";
             return;
         }
@@ -1930,8 +1930,8 @@ public class MainViewModel : BaseViewModel
         ServersList.Insert(0, entry);
         SaveServers();
         ServerInput = "";
-        Status = $"Сервер {entry.AddressLabel} добавлен";
-        ShowToast("Сервер добавлен ✓");
+        Status = $"cyr81";
+        ShowToast("cyr82");
         OnPropertyChanged(nameof(RecentServers));
         await PingServerAsync(entry);
     }
@@ -1940,8 +1940,8 @@ public class MainViewModel : BaseViewModel
     {
         ServersList.Remove(server);
         SaveServers();
-        Status = "Сервер удалён из списка";
-        ShowToast("Сервер удалён");
+        Status = "cyr83";
+        ShowToast("cyr84");
         OnPropertyChanged(nameof(RecentServers));
     }
 
@@ -1957,12 +1957,12 @@ public class MainViewModel : BaseViewModel
         ServersRefreshing = true;
         try
         {
-            // Пингуем параллельно, но не чаще кэша — частые пинги серверы троттлят
+            
             var targets = ServersList
                 .Where(s => force || DateTime.UtcNow - s.LastPingTime > TimeSpan.FromSeconds(s.IsOnline ? 45 : 15))
                 .ToList();
             await Task.WhenAll(targets.Select(PingServerAsync));
-            Status = "Список серверов обновлён";
+            Status = "cyr85";
         }
         finally { ServersRefreshing = false; }
     }
@@ -1973,7 +1973,7 @@ public class MainViewModel : BaseViewModel
         server.LastPingTime = DateTime.UtcNow;
         if (!result.Success)
         {
-            server.Online = "оффлайн";
+            server.Online = "cyr86";
             server.Ping = "—";
             return;
         }
@@ -2010,7 +2010,7 @@ public class MainViewModel : BaseViewModel
         catch { return null; }
     }
 
-    // ═══════════════ УСТАНОВЛЕННЫЕ РП/ШЕЙДЕРЫ ═══════════════
+    
 
     public void LoadInstalledResourcePacks()
     {
@@ -2022,7 +2022,7 @@ public class MainViewModel : BaseViewModel
         LoadPacksAsync(_mods.GetShadersDir(), InstalledShaders);
     }
 
-    /// <summary>Скан папки с ресурспаками/шейдерами в фоне (zip-чтение не фризит UI).</summary>
+    
     private void LoadPacksAsync(string dir, ObservableCollection<InstalledPackItem> target)
     {
         _ = Task.Run(() =>
@@ -2094,10 +2094,10 @@ public class MainViewModel : BaseViewModel
 
     private static string FormatBytes(long bytes)
     {
-        if (bytes >= 1 << 30) return $"{bytes / (double)(1 << 30):0.0} ГБ";
-        if (bytes >= 1 << 20) return $"{bytes / (double)(1 << 20):0.0} МБ";
-        if (bytes >= 1 << 10) return $"{bytes / (double)(1 << 10):0.0} КБ";
-        return $"{bytes} Б";
+        if (bytes >= 1 << 30) return $"cyr87";
+        if (bytes >= 1 << 20) return $"cyr88";
+        if (bytes >= 1 << 10) return $"cyr89";
+        return $"cyr90";
     }
 
     public void RemoveInstalledPack(InstalledPackItem item, bool isShader)
@@ -2107,18 +2107,18 @@ public class MainViewModel : BaseViewModel
             if (Directory.Exists(item.FilePath)) Directory.Delete(item.FilePath, true);
             else File.Delete(item.FilePath);
             if (isShader) LoadInstalledShaders(); else LoadInstalledResourcePacks();
-            Status = $"{item.FileName} удалён";
-            ShowToast("Удалено ✓");
+            Status = $"cyr91";
+            ShowToast("cyr92");
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr93"; }
     }
 
-    // ═══════════════ INIT ═══════════════
-    // ─── Экран загрузки ───
+    
+    
     private bool _isInitializing = true;
     public bool IsInitializing { get => _isInitializing; set => SetProperty(ref _isInitializing, value); }
 
-    private string _initStatus = "Загрузка...";
+    private string _initStatus = "cyr94";
     public string InitStatus { get => _initStatus; set => SetProperty(ref _initStatus, value); }
 
     public async Task InitAsync()
@@ -2126,10 +2126,10 @@ public class MainViewModel : BaseViewModel
         IsInitializing = true;
         try
         {
-            InitStatus = "Загрузка конфигурации...";
+            InitStatus = "cyr95";
             LoadSettings();
 
-            InitStatus = "Подготовка лаунчера...";
+            InitStatus = "cyr96";
             LoadSavedAccount();
             LoadDiscordProfile();
             LoadLaunchHistory();
@@ -2139,27 +2139,27 @@ public class MainViewModel : BaseViewModel
             StartAdmin();
             HomeActive = true;
 
-            InitStatus = "Проверка соединения...";
+            InitStatus = "cyr97";
             var parameters = MinecraftLauncherParameters.CreateDefault(_minecraftPath, _http);
             _launcher = new MinecraftLauncher(parameters);
             _allVersions = await _launcher.GetAllVersionsAsync();
 
-            InitStatus = "Загрузка профилей...";
+            InitStatus = "cyr98";
             _ = LoadJavaAsync();
             await LoadProfilesAsync();
             await RefreshInstalledVersions();
 
-            InitStatus = "Почти готово...";
+            InitStatus = "cyr99";
             FilterVersions();
             SyncVersionOption();
             UpdateActiveMods();
-            Status = "Готов";
+            Status = "cyr100";
 
-            // Фоновая предзагрузка каталогов модов/ресурспаков/шейдеров
-            // (в режиме слабого ПК — без иконок, чтобы не грузить сеть и диск)
+            
+            
             _ = _mods.PrefetchPopularAsync(includeIcons: !_lowEndMode);
 
-            // Тихая проверка обновлений через Telegram-канал
+            
             _ = Task.Run(async () =>
             {
                 await Task.Delay(5000);
@@ -2168,17 +2168,17 @@ public class MainViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
-            Status = $"Ошибка: {ex.Message}";
-            InitStatus = "Ошибка инициализации";
+            Status = $"cyr101";
+            InitStatus = "cyr102";
         }
         finally
         {
-            await Task.Delay(250); // даём полоске доиграть анимацию
+            await Task.Delay(250); 
             IsInitializing = false;
         }
     }
 
-    // ═══════════════ SETTINGS ═══════════════
+    
     public static string SettingsPath => Path.Combine(MinecraftPathHelper.BaseDir, "settings.json");
 
     private void LoadSettings()
@@ -2252,7 +2252,7 @@ public class MainViewModel : BaseViewModel
         catch { }
     }
 
-    // ═══════════════ AUTH ═══════════════
+    
     private static string AccountsFilePath => Path.Combine(MinecraftPathHelper.BaseDir, "accounts.json");
 
     public ObservableCollection<AccountInfo> Accounts { get; } = new();
@@ -2276,13 +2276,13 @@ public class MainViewModel : BaseViewModel
 
         Account = acc;
         SaveAccount();
-        AccountStatus = acc.IsOffline ? $"Оффлайн: {acc.Username}" : $"MS: {acc.Username}";
+        AccountStatus = acc.IsOffline ? $"cyr103" : $"MS: {acc.Username}";
         LoadSkinPreview(acc.SkinPath);
         LoadAccountAvatar(acc.AvatarUrl);
         LoadCapePreview();
         SyncAdminProfile();
-        Status = $"Аккаунт: {acc.Username}";
-        ShowToast($"Аккаунт: {acc.Username}");
+        Status = $"cyr104";
+        ShowToast($"cyr105");
     }
 
     private void LoadAccounts()
@@ -2300,7 +2300,7 @@ public class MainViewModel : BaseViewModel
         }
         catch { }
 
-        // Миграция: если файла нет, но есть текущий аккаунт — добавляем его в список
+        
         if (Account.IsLoggedIn && !Accounts.Any(a => a.Uuid == Account.Uuid && a.Username == Account.Username))
         {
             Accounts.Insert(0, Account);
@@ -2320,7 +2320,7 @@ public class MainViewModel : BaseViewModel
     public void RemoveAccount(AccountInfo acc)
     {
         if (acc == null) return;
-        var r = MessageBox.Show($"Удалить аккаунт «{acc.Username}» из лаунчера?", "Удаление аккаунта",
+        var r = MessageBox.Show($"cyr106", "cyr107",
             MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (r != MessageBoxResult.Yes) return;
 
@@ -2333,11 +2333,11 @@ public class MainViewModel : BaseViewModel
             if (next != null) { SelectedAccount = next; }
             else
             {
-                // Никого не осталось — создаём дефолтный оффлайн-аккаунт
+                
                 LoginOffline("Player");
             }
         }
-        Status = $"Аккаунт {acc.Username} удалён";
+        Status = $"cyr108";
     }
 
     private void LoadSavedAccount()
@@ -2350,9 +2350,9 @@ public class MainViewModel : BaseViewModel
                 Account = JsonSerializer.Deserialize<AccountInfo>(File.ReadAllText(p)) ?? new();
                 if (Account.IsLoggedIn)
                 {
-                    AccountStatus = Account.IsOffline ? $"Оффлайн: {Account.Username}" : $"MS: {Account.Username}";
+                    AccountStatus = Account.IsOffline ? $"cyr109" : $"MS: {Account.Username}";
 
-                    // Если путь к скину не сохранён, но файл есть — находим его
+                    
                     if (string.IsNullOrEmpty(Account.SkinPath))
                     {
                         var found = _skins.GetSkinPath(Account.Username);
@@ -2364,8 +2364,8 @@ public class MainViewModel : BaseViewModel
                     }
                     LoadSkinPreview(Account.SkinPath);
                     CapeStatus = _skins.GetCapePath(Account.Username) != null
-                        ? $"Плащ установлен для {Account.Username}"
-                        : "Плащ не установлен";
+                        ? $"cyr110"
+                        : "cyr111";
                     LoadCapePreview();
 
                     if (AutoLogin)
@@ -2385,7 +2385,7 @@ public class MainViewModel : BaseViewModel
             }
             else if (AutoLogin)
             {
-                // Auto-create default offline account
+                
                 _session = MSession.CreateOfflineSession("Player");
                 Account = new AccountInfo
                 {
@@ -2393,7 +2393,7 @@ public class MainViewModel : BaseViewModel
                     AccountType = "offline", ExpiresAt = DateTime.MaxValue
                 };
                 SaveAccount();
-                AccountStatus = "Оффлайн: Player";
+                AccountStatus = "cyr112";
             }
 
             LoadAccounts();
@@ -2413,7 +2413,7 @@ public class MainViewModel : BaseViewModel
 
     private async Task LoginMsAsync()
     {
-        IsLoggingIn = true; Status = "Вход через Microsoft...";
+        IsLoggingIn = true; Status = "cyr113";
         try
         {
             _loginHandler = JELoginHandlerBuilder.BuildDefault();
@@ -2433,7 +2433,7 @@ public class MainViewModel : BaseViewModel
             {
                 Accounts.Insert(0, Account);
                 SaveAccounts();
-                Status = $"Добавлен аккаунт {Account.Username}";
+                Status = $"cyr114";
             }
             else
             {
@@ -2441,7 +2441,7 @@ public class MainViewModel : BaseViewModel
                 existing.AccessToken = Account.AccessToken;
                 Account = existing;
                 SaveAccounts();
-                Status = $"Аккаунт {Account.Username} обновлён";
+                Status = $"cyr115";
             }
 
             _selectedAccount = Account;
@@ -2450,9 +2450,9 @@ public class MainViewModel : BaseViewModel
             if (_friends != null && _discordProfile == null)
                 _friends.DisplayName = Account.Username;
             AccountStatus = $"MS: {Account.Username}";
-            ShowToast($"Вход выполнен: {Account.Username} ✓");
+            ShowToast($"cyr116");
         }
-        catch (Exception ex) { AccountStatus = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { AccountStatus = $"cyr117"; }
         finally { IsLoggingIn = false; }
     }
 
@@ -2462,35 +2462,35 @@ public class MainViewModel : BaseViewModel
         OfflineUsername = "";
     }
 
-    /// <summary>
-    /// Вход через Discord: OAuth2 (PKCE) → идентификация → оффлайн-аккаунт Minecraft
-    /// с ником и аватаркой из Discord. Не требует никаких ключей.
-    /// </summary>
+    
+    
+    
+    
     private async Task LoginDiscordAsync()
     {
-        IsLoggingIn = true; Status = "Открываю Discord...";
+        IsLoggingIn = true; Status = "cyr118";
         try
         {
             var auth = new DiscordAuthService(_http);
             var user = await auth.LoginAsync();
             if (user == null)
             {
-                AccountStatus = "Вход через Discord отменён";
+                AccountStatus = "cyr119";
                 return;
             }
 
-            // Discord — это авторизация ЛАУНЧЕРА (профиль, аватарка, друзья).
-            // Аккаунт Minecraft остаётся прежним (MS/оффлайн).
+            
+            
             DiscordProfile = user;
             SaveDiscordProfile();
             if (_friends != null) _friends.DisplayName = user.Username;
             StartFriends();
             Status = $"Discord: {user.Username}";
-            ShowToast($"Вход в лаунчер: {user.Username} ✓");
+            ShowToast($"cyr120");
         }
         catch (Exception ex)
         {
-            AccountStatus = $"Ошибка Discord: {ex.Message}";
+            AccountStatus = $"cyr121";
         }
         finally { IsLoggingIn = false; }
     }
@@ -2530,8 +2530,8 @@ public class MainViewModel : BaseViewModel
         _selectedAccount = Account;
         OnPropertyChanged(nameof(SelectedAccount));
         ApplyAccount(Account);
-        AccountStatus = $"Оффлайн: {Account.Username}";
-        ShowToast($"Вход выполнен: {Account.Username} ✓");
+        AccountStatus = $"cyr122";
+        ShowToast($"cyr123");
     }
 
     private static string GenerateOfflineUuid(string username)
@@ -2544,19 +2544,19 @@ public class MainViewModel : BaseViewModel
         return uuid.ToString("N");
     }
 
-    // ═══════════════ VERSIONS ═══════════════
+    
     private async Task RefreshVersionsAsync()
     {
         if (_launcher == null) return;
-        Status = "Обновление версий...";
+        Status = "cyr124";
         try
         {
             _allVersions = await _launcher.GetAllVersionsAsync();
             FilterVersions();
             await RefreshInstalledVersions();
-            Status = $"Версий: {_allVersions.Count()}";
+            Status = $"cyr125";
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr126"; }
     }
 
     private Task RefreshInstalledVersions()
@@ -2576,7 +2576,7 @@ public class MainViewModel : BaseViewModel
     private async Task DownloadVersionAsync()
     {
         if (_launcher == null || string.IsNullOrEmpty(SelectedVersionId) || _session == null) return;
-        IsBusy = true; DlProgress = 0; Status = $"Скачивание {SelectedVersionId}...";
+        IsBusy = true; DlProgress = 0; Status = $"cyr127";
         try
         {
             var cts = new CancellationTokenSource();
@@ -2602,43 +2602,43 @@ public class MainViewModel : BaseViewModel
                     fileProgress, byteProgress, cts.Token);
             });
 
-            Application.Current.Dispatcher.Invoke(() => { DlProgress = 100; Status = $"{SelectedVersionId} установлена!"; });
-            ShowToast($"{SelectedVersionId} установлена ✓");
+            Application.Current.Dispatcher.Invoke(() => { DlProgress = 100; Status = $"cyr128"; });
+            ShowToast($"cyr129");
             await RefreshInstalledVersions();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr130"; }
         finally { FinishDownload(); }
     }
 
-    // ═══════════════ LAUNCH ═══════════════
+    
     private async Task LaunchAsync(ServerEntry? server = null)
     {
-        if (_launcher == null || CurrentProfile == null || _session == null) { Status = "Войдите в аккаунт"; return; }
+        if (_launcher == null || CurrentProfile == null || _session == null) { Status = "cyr131"; return; }
         if (IsGameRunning && !MultipleInstances)
         {
-            Status = "Игра уже запущена. Включите «Запуск нескольких процессов» в настройках, чтобы запускать несколько копий.";
+            Status = "cyr132";
             return;
         }
 
-        // Проверка бана от мод-приложения
+        
         if (_admin != null && _admin.IsBanned(out var banReason, out var banUntil))
         {
-            Status = "Запуск запрещён";
+            Status = "cyr133";
             ShowToast(banUntil != null
-                ? $"Вы забанены до {banUntil:dd.MM HH:mm}. Причина: {banReason}"
-                : $"Вы забанены навсегда. Причина: {banReason}");
+                ? $"cyr134"
+                : $"cyr135");
             return;
         }
 
         IsLaunching = true; IsGameRunning = true;
-        ConsoleLines.Add("══════ Запуск игры ══════");
+        ConsoleLines.Add("cyr136");
         Status = server != null
-            ? $"Подключение к {server.AddressLabel}..."
-            : $"Запуск Minecraft {CurrentProfile.DisplayVersion}...";
+            ? $"cyr137"
+            : $"cyr138";
 
         try
         {
-            // Определяем фактический ID версии с учётом загрузчика модов
+            
             string versionId = CurrentProfile.VersionId;
             if (CurrentProfile.ModLoader == "Fabric" && !string.IsNullOrEmpty(CurrentProfile.ModLoaderVersion))
                 versionId = $"fabric-loader-{CurrentProfile.ModLoaderVersion}-{CurrentProfile.VersionId}";
@@ -2647,22 +2647,22 @@ public class MainViewModel : BaseViewModel
             else if (CurrentProfile.ModLoader == "OptiFine" && !string.IsNullOrEmpty(CurrentProfile.ModLoaderVersion))
                 versionId = $"{CurrentProfile.VersionId}-OptiFine_{CurrentProfile.ModLoaderVersion}";
 
-            // Для оффлайн-аккаунтов со скином ставим CustomSkinLoader (работает и в одиночке, и на серверах)
+            
             var extraJvmArgs = new List<MArgument>(MLaunchOption.DefaultExtraJvmArguments);
             if (!string.IsNullOrEmpty(CurrentProfile.JvmArgs))
                 extraJvmArgs.Add(MArgument.FromCommandLine(CurrentProfile.JvmArgs));
 
-            // Сетевые оптимизации: только IPv4 (без зависаний на IPv6-резолве)
+            
             if (Ipv4Only)
                 extraJvmArgs.Add(new MArgument("-Djava.net.preferIPv4Stack=true"));
 
-            // Профиль запускается в своей игровой папке (изоляция модов и миров)
+            
             var gameDir = GetProfileGameDir(CurrentProfile);
             var extraGameArgs = new List<MArgument>();
             if (!string.Equals(gameDir, MinecraftPathHelper.GameDir, StringComparison.OrdinalIgnoreCase))
                 extraGameArgs.Add(MArgument.FromCommandLine($"--gameDir \"{gameDir}\""));
 
-            // DED Mod (скин, плащ, копирование чата) — кладём в моды профиля
+            
             EnsureDedMod();
             EnsureSkin();
             EnsureCape();
@@ -2691,7 +2691,7 @@ public class MainViewModel : BaseViewModel
                 if (p.TotalTasks > 0) launchTotalTasks = Math.Max(launchTotalTasks, p.TotalTasks);
                 if (p.EventType == CmlLib.Core.Installers.InstallerEventType.Done) launchDoneTasks++;
 
-                // Монотонный прогресс: только растёт, не скачет назад
+                
                 double pct = launchTotalTasks > 0 ? (double)launchDoneTasks / launchTotalTasks * 100 : 1;
                 pct = Math.Max(pct, launchMaxPct);
                 launchMaxPct = pct;
@@ -2699,23 +2699,23 @@ public class MainViewModel : BaseViewModel
                 IsBusy = true;
                 DlFile = p.Name ?? "";
                 ReportProgress(Math.Min(pct, 99.5));
-                Status = $"Запуск: {p.Name}";
+                Status = $"cyr139";
             });
             var byteProgress = new Progress<CmlLib.Core.ByteProgress>(p =>
             {
                 IsBusy = true;
             });
 
-            Status = $"Запуск {versionId}...";
+            Status = $"cyr140";
             IsBusy = true;
             DlProgress = 1;
-            DlFile = "Подготовка...";
+            DlFile = "cyr141";
 
             _gameProcess = await Task.Run(async () =>
                 await _launcher.InstallAndBuildProcessAsync(versionId, launchOption,
                     fileProgress, byteProgress, cts.Token));
 
-            // Логируем команду запуска и вывод игры в файл
+            
             try
             {
                 File.AppendAllText(Path.Combine(MinecraftPathHelper.BaseDir, "launcher.log"),
@@ -2723,7 +2723,7 @@ public class MainViewModel : BaseViewModel
             }
             catch { }
 
-            // Включаем перенаправление вывода (если CmlLib его не включил)
+            
             _gameProcess.StartInfo.RedirectStandardOutput = true;
             _gameProcess.StartInfo.RedirectStandardError = true;
             _gameProcess.StartInfo.UseShellExecute = false;
@@ -2736,7 +2736,7 @@ public class MainViewModel : BaseViewModel
             _gameProcess.Exited += (s, e) => Application.Current.Dispatcher.Invoke(() =>
             {
                 IsGameRunning = false;
-                Status = "Игра закрыта";
+                Status = "cyr142";
                 _admin?.PublishStatusAsync("online", "");
             });
 
@@ -2751,9 +2751,9 @@ public class MainViewModel : BaseViewModel
             CurrentProfile.LastPlayed = DateTime.UtcNow;
             SaveLaunchHistory(CurrentProfile.VersionId, CurrentProfile.ModLoader);
             SaveProfile(CurrentProfile);
-            Status = server != null ? $"Подключение к {server.AddressLabel}..." : "Игра запущена";
+            Status = server != null ? $"cyr143" : "cyr144";
 
-            // Статус для мод-приложения
+            
             _admin?.PublishStatusAsync("playing", server?.AddressLabel ?? "");
 
             if (server != null)
@@ -2763,7 +2763,7 @@ public class MainViewModel : BaseViewModel
                 ResortServers();
             }
 
-            // Действие после запуска (как в LabyMod)
+            
             switch (PostLaunchAction)
             {
                 case "hide":
@@ -2777,7 +2777,7 @@ public class MainViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
-            Status = $"Ошибка: {ex.Message}";
+            Status = $"cyr145";
             try { File.AppendAllText(Path.Combine(MinecraftPathHelper.BaseDir, "launcher.log"), $"[{DateTime.Now:HH:mm:ss}] EXCEPTION: {ex}{Environment.NewLine}"); } catch { }
             IsGameRunning = false;
             _admin?.PublishStatusAsync("online", "");
@@ -2787,10 +2787,10 @@ public class MainViewModel : BaseViewModel
 
     public void StopGame() { if (_gameProcess != null && !_gameProcess.HasExited) { _gameProcess.Kill(); _gameProcess = null; } }
 
-    // ═══════════════ DED MOD (HUD, бафы, плащ) ═══════════════
+    
 
-    /// <summary>Кладёт ded-mod в моды текущего профиля (обновляет при каждом запуске).
-    /// Мод собран под конкретную версию Minecraft — для других версий профиля не ставится.</summary>
+    
+    
     private void EnsureDedMod()
     {
         try
@@ -2800,7 +2800,7 @@ public class MainViewModel : BaseViewModel
 
             var modsDir = _mods.GetModsDir("");
 
-            // CustomSkinLoader больше не нужен — скин теперь рисует ded-mod (только себе)
+            
             foreach (var csl in Directory.GetFiles(modsDir, "*CustomSkinLoader*.jar"))
             {
                 try { File.Delete(csl); } catch { }
@@ -2819,7 +2819,7 @@ public class MainViewModel : BaseViewModel
         catch { }
     }
 
-    /// <summary>Копирует скин аккаунта (64x64) в config профиля — ded-mod покажет его только тебе.</summary>
+    
     private void EnsureSkin()
     {
         try
@@ -2837,7 +2837,7 @@ public class MainViewModel : BaseViewModel
         catch { }
     }
 
-    /// <summary>Копирует плащ аккаунта в config профиля (его читает ded-mod).</summary>
+    
     private void EnsureCape()
     {
         try
@@ -2851,13 +2851,13 @@ public class MainViewModel : BaseViewModel
         catch { }
     }
 
-    // ═══════════════ JAVA ═══════════════
+    
     private async Task LoadJavaAsync()
     {
         try { var list = await _java.FindJavaInstallationsAsync(); JavaInstallations.Clear(); foreach (var j in list) JavaInstallations.Add(j); } catch { }
     }
 
-    // ═══════════════ PROFILES ═══════════════
+    
     private async Task LoadProfilesAsync()
     {
         Profiles.Clear();
@@ -2869,8 +2869,8 @@ public class MainViewModel : BaseViewModel
         }
         if (Profiles.Count == 0) AddDefaultProfile();
 
-        // Изоляция профилей: самый старый профиль остаётся на общей папке,
-        // остальным выдаём собственные игровые папки (свои моды и миры)
+        
+        
         var ordered = Profiles.OrderBy(p => p.CreatedAt).ToList();
         bool first = true;
         foreach (var p in ordered)
@@ -2888,7 +2888,7 @@ public class MainViewModel : BaseViewModel
 
     private void AddDefaultProfile()
     {
-        var p = new LaunchProfile { Name = "Основной", VersionId = "1.21.1", MaxRamMb = 3072, MinRamMb = 2048 };
+        var p = new LaunchProfile { Name = "cyr146", VersionId = "1.21.1", MaxRamMb = 3072, MinRamMb = 2048 };
         Profiles.Add(p); SaveProfile(p); CurrentProfile = p;
     }
 
@@ -2898,25 +2898,25 @@ public class MainViewModel : BaseViewModel
     private void CreateProfile()
     {
         var name = ProfileNameInput.Trim();
-        if (string.IsNullOrEmpty(name)) { Status = "Введите имя профиля"; return; }
+        if (string.IsNullOrEmpty(name)) { Status = "cyr147"; return; }
         if (Profiles.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-        { Status = "Профиль с таким именем уже есть"; return; }
+        { Status = "cyr148"; return; }
 
         var p = new LaunchProfile { Name = name, VersionId = SelectedVersionId ?? "1.21.1", MaxRamMb = 4096, MinRamMb = 2048 };
-        // Новые профили всегда изолированы — своя папка модов и миров
+        
         p.GameDir = Path.Combine(MinecraftPathHelper.BaseDir, "profiles", p.Id, "game");
         Profiles.Add(p); SaveProfile(p); CurrentProfile = p;
         ProfileNameInput = "";
         CopyBaseAssetsToProfile(p);
         LoadMods();
-        Status = $"Профиль «{name}» создан";
-        ShowToast("Профиль создан ✓");
+        Status = $"cyr149";
+        ShowToast("cyr150");
     }
 
-    /// <summary>
-    /// Переносит моды/ресурспаки/шейдеры из основной папки в профиль,
-    /// чтобы новый профиль сразу работал как основной.
-    /// </summary>
+    
+    
+    
+    
     public void CopyModsToCurrentProfile()
     {
         if (CurrentProfile == null) return;
@@ -2924,7 +2924,7 @@ public class MainViewModel : BaseViewModel
         LoadMods();
         LoadInstalledResourcePacks();
         LoadInstalledShaders();
-        ShowToast("Моды скопированы в профиль ✓");
+        ShowToast("cyr151");
     }
 
     private void CopyBaseAssetsToProfile(LaunchProfile p)
@@ -2933,7 +2933,7 @@ public class MainViewModel : BaseViewModel
         {
             var dst = GetProfileGameDir(p);
             if (string.Equals(Path.GetFullPath(dst), Path.GetFullPath(MinecraftPathHelper.GameDir),
-                    StringComparison.OrdinalIgnoreCase)) return; // основной профиль — копировать некуда
+                    StringComparison.OrdinalIgnoreCase)) return; 
 
             var copied = 0;
             foreach (var sub in new[] { "mods", "resourcepacks", "shaderpacks" })
@@ -2952,7 +2952,7 @@ public class MainViewModel : BaseViewModel
                     }
                 }
             }
-            if (copied > 0) Status = $"В профиль скопировано: {copied} файлов";
+            if (copied > 0) Status = $"cyr152";
         }
         catch { }
     }
@@ -2961,9 +2961,9 @@ public class MainViewModel : BaseViewModel
     {
         if (CurrentProfile == null) return;
         var name = ProfileNameInput.Trim();
-        if (string.IsNullOrEmpty(name)) { Status = "Введите новое имя профиля"; return; }
+        if (string.IsNullOrEmpty(name)) { Status = "cyr153"; return; }
         if (Profiles.Any(p => p != CurrentProfile && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-        { Status = "Профиль с таким именем уже есть"; return; }
+        { Status = "cyr154"; return; }
 
         var oldFile = Path.Combine(MinecraftPathHelper.ProfilesDir, $"{CurrentProfile.Name}.json");
         if (File.Exists(oldFile)) { try { File.Delete(oldFile); } catch { } }
@@ -2971,21 +2971,21 @@ public class MainViewModel : BaseViewModel
         CurrentProfile.Name = name;
         SaveProfile(CurrentProfile);
 
-        // Обновляем элемент в списке, чтобы ComboBox перерисовался
+        
         var idx = Profiles.IndexOf(CurrentProfile);
         if (idx >= 0) Profiles[idx] = CurrentProfile;
 
         ProfileNameInput = "";
-        Status = $"Профиль переименован в «{name}»";
-        ShowToast("Профиль переименован ✓");
+        Status = $"cyr155";
+        ShowToast("cyr156");
     }
 
-    private void SaveCurrentProfile() { if (CurrentProfile != null) { SaveProfile(CurrentProfile); Status = "Профиль сохранён"; } }
+    private void SaveCurrentProfile() { if (CurrentProfile != null) { SaveProfile(CurrentProfile); Status = "cyr157"; } }
 
     private void DeleteCurrentProfile()
     {
         if (CurrentProfile == null || Profiles.Count <= 1) return;
-        var r = MessageBox.Show($"Удалить профиль «{CurrentProfile.Name}»?", "Удаление", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        var r = MessageBox.Show($"cyr158", "cyr159", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (r != MessageBoxResult.Yes) return;
         var path = Path.Combine(MinecraftPathHelper.ProfilesDir, $"{CurrentProfile.Name}.json");
         if (File.Exists(path)) File.Delete(path);
@@ -3000,15 +3000,15 @@ public class MainViewModel : BaseViewModel
             JsonSerializer.Serialize(p, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    // ═══════════════ MODS ═══════════════
+    
     public void ImportMods(string[] files) { if (CurrentProfile != null) { foreach (var f in files) _mods.InstallMod(f, CurrentProfile.Id); LoadMods(); } }
-    public void RemoveMod(ModInfo mod) { _mods.RemoveMod(mod.FilePath); InstalledMods.Remove(mod); UpdateActiveMods(); OnPropertyChanged(nameof(ModsCount)); ShowToast("Мод удалён"); }
+    public void RemoveMod(ModInfo mod) { _mods.RemoveMod(mod.FilePath); InstalledMods.Remove(mod); UpdateActiveMods(); OnPropertyChanged(nameof(ModsCount)); ShowToast("cyr160"); }
     public void RefreshInstalledMods() => LoadMods();
 
-    /// <summary>
-    /// Галочка в списке модов реально включает/отключает мод
-    /// (переименование .jar ↔ .jar.disabled — Fabric грузит только .jar).
-    /// </summary>
+    
+    
+    
+    
     public void SetModEnabled(ModInfo mod, bool enabled)
     {
         try
@@ -3019,23 +3019,23 @@ public class MainViewModel : BaseViewModel
             UpdateActiveMods();
             OnPropertyChanged(nameof(ModsCount));
             Status = enabled
-                ? $"Мод «{mod.DisplayName}» включён"
-                : $"Мод «{mod.DisplayName}» отключён — не будет загружаться";
-            ShowToast(enabled ? "Мод включён" : "Мод отключён");
+                ? $"cyr161"
+                : $"cyr162";
+            ShowToast(enabled ? "cyr163" : "cyr164");
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr165"; }
     }
 
-    // ═══════════════ DRAG & DROP: установка файлов ═══════════════
+    
 
-    /// <summary>
-    /// Устанавливает брошенные на лаунчер файлы:
-    /// .jar/.zip — мод, ресурспак или шейдер (определяется по содержимому),
-    /// папка — ресурспак/шейдер, .png — скин текущего аккаунта.
-    /// </summary>
+    
+    
+    
+    
+    
     public void InstallDroppedFiles(string[] paths)
     {
-        if (CurrentProfile == null) { Status = "Выберите профиль"; return; }
+        if (CurrentProfile == null) { Status = "cyr166"; return; }
         var installed = new List<string>();
 
         foreach (var path in paths)
@@ -3044,36 +3044,36 @@ public class MainViewModel : BaseViewModel
             {
                 var name = Path.GetFileName(path);
 
-                // Папка — ресурспак или шейдер
+                
                 if (Directory.Exists(path))
                 {
                     var dirTarget = GetDirectoryTarget(path);
-                    if (dirTarget == null) { Status = $"Пропущено (не ресурспак/шейдер): {name}"; continue; }
+                    if (dirTarget == null) { Status = $"cyr167"; continue; }
                     var dirDest = Path.Combine(dirTarget, name);
-                    if (Directory.Exists(dirDest)) { Status = $"Уже установлено: {name}"; continue; }
+                    if (Directory.Exists(dirDest)) { Status = $"cyr168"; continue; }
                     CopyDirectoryRecursive(path, dirDest);
-                    installed.Add($"{name} → {(dirTarget.Contains("shader") ? "шейдеры" : "ресурспаки")}");
+                    installed.Add($"cyr169");
                     continue;
                 }
 
                 var ext = Path.GetExtension(path).ToLower();
 
-                // PNG — скин
+                
                 if (ext == ".png")
                 {
                     var (valid, w, h) = _skins.ValidateSkin(path);
-                    if (!valid) { Status = $"Скин {name}: размер {w}x{h} не подходит (нужен 64x64/128x128)"; continue; }
+                    if (!valid) { Status = $"cyr170"; continue; }
                     var prepared = _skins.PrepareSkin(path);
                     var savedPath = _skins.SaveSkin(prepared, Account.Username);
                     Account.SkinPath = savedPath;
                     SaveAccount();
                     LoadSkinPreview(savedPath);
-                    SkinStatus = $"Скин установлен для {Account.Username}";
-                    installed.Add($"{name} → скин");
+                    SkinStatus = $"cyr171";
+                    installed.Add($"cyr172");
                     continue;
                 }
 
-                if (ext is not (".jar" or ".zip")) { Status = $"Неизвестный формат: {name}"; continue; }
+                if (ext is not (".jar" or ".zip")) { Status = $"cyr173"; continue; }
 
                 var kind = ClassifyArchive(path, ext);
                 var destFolder = kind switch
@@ -3084,17 +3084,17 @@ public class MainViewModel : BaseViewModel
                 };
                 var kindLabel = kind switch
                 {
-                    "resourcepack" => "ресурспаки",
-                    "shader" => "шейдеры",
-                    _ => "моды"
+                    "resourcepack" => "cyr174",
+                    "shader" => "cyr175",
+                    _ => "cyr176"
                 };
 
                 var dest = Path.Combine(destFolder, name);
-                if (File.Exists(dest)) { Status = $"Уже установлено: {name}"; continue; }
+                if (File.Exists(dest)) { Status = $"cyr177"; continue; }
                 File.Copy(path, dest);
                 installed.Add($"{name} → {kindLabel}");
             }
-            catch (Exception ex) { Status = $"Ошибка установки {Path.GetFileName(path)}: {ex.Message}"; }
+            catch (Exception ex) { Status = $"cyr178"; }
         }
 
         LoadMods();
@@ -3102,10 +3102,10 @@ public class MainViewModel : BaseViewModel
         LoadInstalledShaders();
 
         Status = installed.Count > 0
-            ? $"Установлено ({installed.Count}): {string.Join(" · ", installed)}"
-            : "Ничего не установлено";
+            ? $"cyr179"
+            : "cyr180";
         if (installed.Count > 0)
-            ShowToast($"Установлено: {installed.Count} шт. ✓");
+            ShowToast($"cyr181");
     }
 
     private string? GetDirectoryTarget(string dir)
@@ -3154,8 +3154,8 @@ public class MainViewModel : BaseViewModel
             return;
         }
         var profileId = CurrentProfile.Id;
-        // Скан папки модов + чтение fabric.mod.json из каждого jar — в фоне,
-        // иначе UI фризит на большом списке модов
+        
+        
         _ = Task.Run(() => _mods.GetInstalledMods(profileId)).ContinueWith(t =>
         {
             List<ModInfo> mods;
@@ -3182,10 +3182,10 @@ public class MainViewModel : BaseViewModel
     {
         if (string.IsNullOrWhiteSpace(ModSearchQuery) || CurrentProfile == null)
         {
-            Status = "Введите запрос для поиска";
+            Status = "cyr182";
             return;
         }
-        IsBusy = true; Status = $"Поиск ({ModSource}): {ModSearchQuery}...";
+        IsBusy = true; Status = $"cyr183";
         try
         {
             if (ModSource == "CurseForge")
@@ -3199,8 +3199,8 @@ public class MainViewModel : BaseViewModel
                 OnPropertyChanged(nameof(HasMoreCfMods));
                 _ = LoadCurseForgeIconsAsync(CurseForgeResults.ToList());
                 Status = CurseForgeResults.Count > 0
-                    ? $"Найдено модов: {results.Count}"
-                    : $"По запросу «{ModSearchQuery}» ничего не найдено";
+                    ? $"cyr184"
+                    : $"cyr185";
             }
             else
             {
@@ -3212,17 +3212,17 @@ public class MainViewModel : BaseViewModel
                 OnPropertyChanged(nameof(HasMoreMods));
                 _ = LoadModrinthIconsAsync(ModrinthResults.ToList());
                 Status = ModrinthResults.Count > 0
-                    ? $"Найдено модов: {total}"
-                    : $"По запросу «{ModSearchQuery}» ничего не найдено";
+                    ? $"cyr186"
+                    : $"cyr187";
             }
         }
-        catch (Exception ex) { Status = $"Ошибка поиска: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr188"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
-    /// <summary>
-    /// Бесконечная прокрутка: догружает следующую страницу модов Modrinth.
-    /// </summary>
+    
+    
+    
     public async Task LoadMoreModsAsync()
     {
         if (IsBusy || ModSource != "Modrinth" || !HasMoreMods) return;
@@ -3235,7 +3235,7 @@ public class MainViewModel : BaseViewModel
             _modOffset += results.Count; _modTotalHits = total;
             OnPropertyChanged(nameof(HasMoreMods));
             _ = LoadModrinthIconsAsync(results);
-            Status = $"Модов загружено: {ModrinthResults.Count} из {_modTotalHits}";
+            Status = $"cyr189";
         }
         catch { }
         finally { IsBusy = false; DlFile = ""; }
@@ -3244,7 +3244,7 @@ public class MainViewModel : BaseViewModel
     private async Task LoadRecommendedModsAsync()
     {
         if (ModrinthResults.Count > 0 || CurseForgeResults.Count > 0) return;
-        IsBusy = true; Status = "Загрузка популярных модов...";
+        IsBusy = true; Status = "cyr190";
         try
         {
             var (results, total) = await _mods.SearchModrinthPageAsync("", "mod", "", "", 24, 0);
@@ -3254,31 +3254,31 @@ public class MainViewModel : BaseViewModel
             OnPropertyChanged(nameof(HasMoreMods));
             _ = LoadModrinthIconsAsync(ModrinthResults.ToList());
             Status = ModrinthResults.Count > 0
-                ? $"Популярные моды: {total}"
-                : "Моды не загрузились — проверьте интернет";
+                ? $"cyr191"
+                : "cyr192";
         }
-        catch (Exception ex) { Status = $"Ошибка загрузки модов: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr193"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
     public async Task InstallCurseForgeModAsync(CurseForgeMod mod)
     {
         if (CurrentProfile == null) return;
-        IsBusy = true; Status = $"Установка {mod.Name}...";
+        IsBusy = true; Status = $"cyr194";
         try
         {
             var files = await _mods.GetCurseForgeFilesAsync(mod.Id);
             var file = files.FirstOrDefault(f => f.GameVersions.Contains(CurrentProfile.VersionId)) ?? files.FirstOrDefault();
-            if (file == null) { Status = "Нет подходящих файлов"; return; }
+            if (file == null) { Status = "cyr195"; return; }
 
             var progress = new Progress<DownloadProgress>(p =>
                 Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); }));
             await _mods.DownloadCurseForgeFileAsync(file, CurrentProfile.Id, progress);
-            Status = $"{mod.Name} установлен";
-            ShowToast("Мод установлен ✓");
+            Status = $"cyr196";
+            ShowToast("cyr197");
             LoadMods();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr198"; }
         finally { FinishDownload(); }
     }
 
@@ -3294,7 +3294,7 @@ public class MainViewModel : BaseViewModel
 
     private async Task LoadCurseForgeModsAsync()
     {
-        IsBusy = true; Status = "Загрузка модов CurseForge...";
+        IsBusy = true; Status = "cyr199";
         try
         {
             var results = await _mods.SearchCurseForgeAsync("", CurrentProfile?.VersionId ?? "");
@@ -3306,17 +3306,17 @@ public class MainViewModel : BaseViewModel
             OnPropertyChanged(nameof(HasMoreCfMods));
             _ = LoadCurseForgeIconsAsync(CurseForgeResults.ToList());
             Status = CurseForgeResults.Count > 0
-                ? $"Моды CurseForge: {CurseForgeResults.Count} из {_allCfMods.Count}"
-                : "Моды CurseForge не загрузились — проверьте интернет";
+                ? $"cyr200"
+                : "cyr201";
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr202"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
-    /// <summary>
-    /// Бесконечная прокрутка CurseForge: догружает следующий чанк
-    /// из уже полученного каталога (CF без API-ключа пагинацию не отдаёт).
-    /// </summary>
+    
+    
+    
+    
     public async Task LoadMoreCurseForgeModsAsync()
     {
         if (IsBusy || !HasMoreCfMods) return;
@@ -3327,7 +3327,7 @@ public class MainViewModel : BaseViewModel
             _modCfOffset += chunk.Count;
             OnPropertyChanged(nameof(HasMoreCfMods));
             _ = LoadCurseForgeIconsAsync(chunk);
-            Status = $"Модов загружено: {CurseForgeResults.Count} из {_allCfMods.Count}";
+            Status = $"cyr203";
         }
         catch { }
     }
@@ -3339,27 +3339,27 @@ public class MainViewModel : BaseViewModel
         try
         {
             Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"\"{dir}\"", UseShellExecute = true });
-            Status = "Папка модов открыта";
+            Status = "cyr204";
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr205"; }
     }
 
     public void RunDiagnostics()
     {
-        Log("═══ ДИАГНОСТИКА ═══");
-        Log($"ОС: {Environment.OSVersion}");
-        Log($"RAM: {SystemInfo.TotalRamMb} МБ всего, {SystemInfo.AvailableRamMb} МБ доступно");
-        Log($"Аккаунт: {Account.Username} ({AccountTypeLabel})");
-        Log($"Профиль: {CurrentProfile?.DisplayVersion ?? "нет"}");
-        Log($"Java найдено: {JavaInstallations.Count}");
+        Log("cyr206");
+        Log($"cyr207");
+        Log($"cyr208");
+        Log($"cyr209");
+        Log($"cyr210");
+        Log($"cyr211");
         foreach (var j in JavaInstallations.Take(5))
             Log($"  Java: {j.Version} ({j.Vendor})");
-        Log($"Установлено версий MC: {InstalledVersionIds.Count}");
+        Log($"cyr212");
         foreach (var v in InstalledVersionIds.Take(10))
-            Log($"  Версия: {v}");
-        Log($"Модов установлено: {ModsCount}");
-        Log($"Тема: {SelectedTheme}");
-        Log("═══ КОНЕЦ ДИАГНОСТИКИ ═══");
+            Log($"cyr213");
+        Log($"cyr214");
+        Log($"cyr215");
+        Log("cyr216");
     }
 
     private static System.Threading.SemaphoreSlim? _iconGate;
@@ -3404,17 +3404,17 @@ public class MainViewModel : BaseViewModel
     {
         switch (category)
         {
-            case "Все": ModSearchQuery = ""; _ = (ModSource == "CurseForge" ? LoadCurseForgeModsAsync() : LoadRecommendedModsAsync()); break;
-            case "Оптимизация": ModSearchQuery = "optimization"; break;
-            case "Техно": ModSearchQuery = "tech"; break;
-            case "Магия": ModSearchQuery = "magic"; break;
-            case "Интерфейс": ModSearchQuery = "ui hud"; break;
+            case "cyr217": ModSearchQuery = ""; _ = (ModSource == "CurseForge" ? LoadCurseForgeModsAsync() : LoadRecommendedModsAsync()); break;
+            case "cyr218": ModSearchQuery = "optimization"; break;
+            case "cyr219": ModSearchQuery = "tech"; break;
+            case "cyr220": ModSearchQuery = "magic"; break;
+            case "cyr221": ModSearchQuery = "ui hud"; break;
         }
-        if (category != "Все")
+        if (category != "cyr222")
             _ = SearchModsAsync();
     }
 
-    // ═══════════════ РЕСУРСПАКИ И ШЕЙДЕРЫ ═══════════════
+    
 
     public void SetRpSource(string source)
     {
@@ -3438,7 +3438,7 @@ public class MainViewModel : BaseViewModel
 
     private async Task LoadRecommendedResourcePacksAsync()
     {
-        IsBusy = true; Status = "Загрузка популярных ресурспаков...";
+        IsBusy = true; Status = "cyr223";
         try
         {
             var (results, total) = await _mods.SearchModrinthPageAsync("", "resourcepack", "", "", 24, 0);
@@ -3447,15 +3447,15 @@ public class MainViewModel : BaseViewModel
             _rpOffset = results.Count; _rpTotalHits = total;
             OnPropertyChanged(nameof(HasMoreRps));
             _ = LoadModrinthIconsAsync(ResourcePackResults.ToList());
-            Status = $"Популярные ресурспаки: {ResourcePackResults.Count}";
+            Status = $"cyr224";
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr225"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
     private async Task LoadRecommendedShadersAsync()
     {
-        IsBusy = true; Status = "Загрузка популярных шейдеров...";
+        IsBusy = true; Status = "cyr226";
         try
         {
             var (results, total) = await _mods.SearchModrinthPageAsync("", "shader", "", "", 24, 0);
@@ -3464,15 +3464,15 @@ public class MainViewModel : BaseViewModel
             _shaderOffset = results.Count; _shaderTotalHits = total;
             OnPropertyChanged(nameof(HasMoreShaders));
             _ = LoadModrinthIconsAsync(ShaderResults.ToList());
-            Status = $"Популярные шейдеры: {ShaderResults.Count}";
+            Status = $"cyr227";
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr228"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
     private async Task LoadCurseForgeResourcePacksAsync()
     {
-        IsBusy = true; Status = "Загрузка ресурспаков CurseForge...";
+        IsBusy = true; Status = "cyr229";
         try
         {
             var results = await _mods.SearchCurseForgeByCategoryAsync("", ModService.CfCategoryResourcePacks);
@@ -3482,9 +3482,9 @@ public class MainViewModel : BaseViewModel
             _rpCfOffset = ResourcePackCfResults.Count;
             OnPropertyChanged(nameof(HasMoreCfResourcePacks));
             _ = LoadCurseForgeIconsAsync(ResourcePackCfResults.ToList());
-            Status = $"Ресурспаки CurseForge: {results.Count}";
+            Status = $"cyr230";
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr231"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
@@ -3499,7 +3499,7 @@ public class MainViewModel : BaseViewModel
             _rpCfOffset += chunk.Count;
             OnPropertyChanged(nameof(HasMoreCfResourcePacks));
             _ = LoadCurseForgeIconsAsync(chunk);
-            Status = $"Ресурспаков загружено: {ResourcePackCfResults.Count} из {_allCfResourcePacks.Count}";
+            Status = $"cyr232";
         }
         catch { }
         finally { IsBusy = false; DlFile = ""; }
@@ -3507,7 +3507,7 @@ public class MainViewModel : BaseViewModel
 
     private async Task LoadCurseForgeShadersAsync()
     {
-        IsBusy = true; Status = "Загрузка шейдеров CurseForge...";
+        IsBusy = true; Status = "cyr233";
         try
         {
             var results = await _mods.SearchCurseForgeByCategoryAsync("", ModService.CfCategoryShaders);
@@ -3517,9 +3517,9 @@ public class MainViewModel : BaseViewModel
             _shaderCfOffset = ShaderCfResults.Count;
             OnPropertyChanged(nameof(HasMoreCfShaders));
             _ = LoadCurseForgeIconsAsync(ShaderCfResults.ToList());
-            Status = $"Шейдеры CurseForge: {results.Count}";
+            Status = $"cyr234";
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr235"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
@@ -3534,7 +3534,7 @@ public class MainViewModel : BaseViewModel
             _shaderCfOffset += chunk.Count;
             OnPropertyChanged(nameof(HasMoreCfShaders));
             _ = LoadCurseForgeIconsAsync(chunk);
-            Status = $"Шейдеров загружено: {ShaderCfResults.Count} из {_allCfShaders.Count}";
+            Status = $"cyr236";
         }
         catch { }
         finally { IsBusy = false; DlFile = ""; }
@@ -3543,7 +3543,7 @@ public class MainViewModel : BaseViewModel
     public async Task SearchResourcePacksAsync()
     {
         if (string.IsNullOrWhiteSpace(ModSearchQuery)) return;
-        IsBusy = true; Status = $"Поиск ресурспаков ({RpSource}): {ModSearchQuery}...";
+        IsBusy = true; Status = $"cyr237";
         try
         {
             if (RpSource == "CurseForge")
@@ -3552,7 +3552,7 @@ public class MainViewModel : BaseViewModel
                 ResourcePackCfResults.Clear();
                 foreach (var r in results) ResourcePackCfResults.Add(r);
                 _ = LoadCurseForgeIconsAsync(ResourcePackCfResults.ToList());
-                Status = $"Ресурспаков найдено: {ResourcePackCfResults.Count}";
+                Status = $"cyr238";
             }
             else
             {
@@ -3562,10 +3562,10 @@ public class MainViewModel : BaseViewModel
                 _rpOffset = results.Count; _rpTotalHits = total;
                 OnPropertyChanged(nameof(HasMoreRps));
                 _ = LoadModrinthIconsAsync(ResourcePackResults.ToList());
-                Status = $"Ресурспаков найдено: {total}";
+                Status = $"cyr239";
             }
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr240"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
@@ -3580,7 +3580,7 @@ public class MainViewModel : BaseViewModel
             _rpOffset += results.Count; _rpTotalHits = total;
             OnPropertyChanged(nameof(HasMoreRps));
             _ = LoadModrinthIconsAsync(results);
-            Status = $"Ресурспаков загружено: {ResourcePackResults.Count} из {_rpTotalHits}";
+            Status = $"cyr241";
         }
         catch { }
         finally { IsBusy = false; DlFile = ""; }
@@ -3589,7 +3589,7 @@ public class MainViewModel : BaseViewModel
     public async Task SearchShadersAsync()
     {
         if (string.IsNullOrWhiteSpace(ModSearchQuery)) return;
-        IsBusy = true; Status = $"Поиск шейдеров ({ShaderSource}): {ModSearchQuery}...";
+        IsBusy = true; Status = $"cyr242";
         try
         {
             if (ShaderSource == "CurseForge")
@@ -3598,7 +3598,7 @@ public class MainViewModel : BaseViewModel
                 ShaderCfResults.Clear();
                 foreach (var r in results) ShaderCfResults.Add(r);
                 _ = LoadCurseForgeIconsAsync(ShaderCfResults.ToList());
-                Status = $"Шейдеров найдено: {ShaderCfResults.Count}";
+                Status = $"cyr243";
             }
             else
             {
@@ -3608,10 +3608,10 @@ public class MainViewModel : BaseViewModel
                 _shaderOffset = results.Count; _shaderTotalHits = total;
                 OnPropertyChanged(nameof(HasMoreShaders));
                 _ = LoadModrinthIconsAsync(ShaderResults.ToList());
-                Status = $"Шейдеров найдено: {total}";
+                Status = $"cyr244";
             }
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr245"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
@@ -3626,7 +3626,7 @@ public class MainViewModel : BaseViewModel
             _shaderOffset += results.Count; _shaderTotalHits = total;
             OnPropertyChanged(nameof(HasMoreShaders));
             _ = LoadModrinthIconsAsync(results);
-            Status = $"Шейдеров загружено: {ShaderResults.Count} из {_shaderTotalHits}";
+            Status = $"cyr246";
         }
         catch { }
         finally { IsBusy = false; DlFile = ""; }
@@ -3635,78 +3635,78 @@ public class MainViewModel : BaseViewModel
     public async Task InstallResourcePackAsync(ModrinthMod item)
     {
         if (CurrentProfile == null) return;
-        IsBusy = true; Status = $"Скачивание {item.Title}...";
+        IsBusy = true; Status = $"cyr247";
         try
         {
             var progress = new Progress<DownloadProgress>(p =>
                 Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); }));
             await _mods.DownloadModrinthToFolderAsync(item, CurrentProfile.VersionId, "minecraft",
                 _mods.GetResourcePacksDir(), progress);
-            Status = $"{item.Title} установлен в ресурспаки";
-            ShowToast("Ресурспак установлен ✓");
+            Status = $"cyr248";
+            ShowToast("cyr249");
             LoadInstalledResourcePacks();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr250"; }
         finally { FinishDownload(); }
     }
 
     public async Task InstallCurseForgeResourcePackAsync(CurseForgeMod mod)
     {
-        IsBusy = true; Status = $"Скачивание {mod.Name}...";
+        IsBusy = true; Status = $"cyr251";
         try
         {
             var files = await _mods.GetCurseForgeFilesAsync(mod.Id);
             var file = files.FirstOrDefault(f => f.GameVersions.Contains(CurrentProfile?.VersionId ?? "")) ?? files.FirstOrDefault();
-            if (file == null) { Status = "Нет подходящих файлов"; return; }
+            if (file == null) { Status = "cyr252"; return; }
             var progress = new Progress<DownloadProgress>(p =>
                 Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); }));
             await _mods.DownloadCurseForgeFileToFolderAsync(file, _mods.GetResourcePacksDir(), progress);
-            Status = $"{mod.Name} установлен в ресурспаки";
-            ShowToast("Ресурспак установлен ✓");
+            Status = $"cyr253";
+            ShowToast("cyr254");
             LoadInstalledResourcePacks();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr255"; }
         finally { FinishDownload(); }
     }
 
     public async Task InstallShaderAsync(ModrinthMod item)
     {
         if (CurrentProfile == null) return;
-        IsBusy = true; Status = $"Скачивание {item.Title}...";
+        IsBusy = true; Status = $"cyr256";
         try
         {
             var progress = new Progress<DownloadProgress>(p =>
                 Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); }));
             await _mods.DownloadModrinthToFolderAsync(item, CurrentProfile.VersionId, "iris",
                 _mods.GetShadersDir(), progress);
-            Status = $"{item.Title} установлен в шейдеры";
-            ShowToast("Шейдер установлен ✓");
+            Status = $"cyr257";
+            ShowToast("cyr258");
             LoadInstalledShaders();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr259"; }
         finally { FinishDownload(); }
     }
 
     public async Task InstallCurseForgeShaderAsync(CurseForgeMod mod)
     {
-        IsBusy = true; Status = $"Скачивание {mod.Name}...";
+        IsBusy = true; Status = $"cyr260";
         try
         {
             var files = await _mods.GetCurseForgeFilesAsync(mod.Id);
             var file = files.FirstOrDefault(f => f.GameVersions.Contains(CurrentProfile?.VersionId ?? "")) ?? files.FirstOrDefault();
-            if (file == null) { Status = "Нет подходящих файлов"; return; }
+            if (file == null) { Status = "cyr261"; return; }
             var progress = new Progress<DownloadProgress>(p =>
                 Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); }));
             await _mods.DownloadCurseForgeFileToFolderAsync(file, _mods.GetShadersDir(), progress);
-            Status = $"{mod.Name} установлен в шейдеры";
-            ShowToast("Шейдер установлен ✓");
+            Status = $"cyr262";
+            ShowToast("cyr263");
             LoadInstalledShaders();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr264"; }
         finally { FinishDownload(); }
     }
 
-    // ═══════════════ СКРИНШОТЫ ═══════════════
+    
 
     public void LoadScreenshots()
     {
@@ -3732,7 +3732,7 @@ public class MainViewModel : BaseViewModel
         catch { }
     }
 
-    /// <summary>Декодирует превью скриншота в фоне — не фризит UI.</summary>
+    
     private async Task LoadScreenshotThumbnailAsync(ScreenshotItem item)
     {
         try
@@ -3786,17 +3786,17 @@ public class MainViewModel : BaseViewModel
         return CurrentProfile.ModLoader == "Vanilla" ? "fabric" : CurrentProfile.ModLoader.ToLower();
     }
 
-    /// <summary>
-    /// Авто-установка: качает лучшую совместимую версию без окна выбора.
-    /// Если под профиль ничего нет — показывает окно выбора со всеми версиями.
-    /// </summary>
+    
+    
+    
+    
     private async Task InstallModrinthAutoAsync(ModrinthMod mod)
     {
         if (CurrentProfile == null) return;
         var loader = ProfileLoader();
 
         IsBusy = true;
-        Status = $"Получение версий {mod.Title}...";
+        Status = $"cyr265";
         List<ModrinthVersion> filtered;
         try
         {
@@ -3807,23 +3807,23 @@ public class MainViewModel : BaseViewModel
 
         if (filtered.Count > 0)
         {
-            // Первая в отфильтрованном списке — самая свежая совместимая
+            
             await DownloadModVersionAsync(mod, filtered[0]);
             return;
         }
 
-        // Совместимых нет — показываем выбор из всех версий
+        
         await ShowModVersionsAsync(mod);
     }
 
-    /// <summary>Отдельный выбор версии мода: всегда открывает окно выбора.</summary>
+    
     public async Task ShowModVersionsAsync(ModrinthMod mod)
     {
         if (CurrentProfile == null) return;
         var loader = ProfileLoader();
 
         IsBusy = true;
-        Status = $"Получение версий {mod.Title}...";
+        Status = $"cyr266";
         List<ModrinthVersion> filtered;
         List<ModrinthVersion> all;
         try
@@ -3838,8 +3838,8 @@ public class MainViewModel : BaseViewModel
 
         if (all.Count == 0)
         {
-            Status = "Нет доступных версий для загрузки";
-            ShowToast("Нет доступных версий");
+            Status = "cyr267";
+            ShowToast("cyr268");
             return;
         }
 
@@ -3849,7 +3849,7 @@ public class MainViewModel : BaseViewModel
             Title = v.VersionNumber,
             Sub = (v.GameVersions.Count > 0
                     ? "MC " + string.Join(", ", v.GameVersions.Take(3))
-                    : "MC не указана")
+                    : "cyr269")
                   + (v.Loaders.Count > 0 ? "  ·  " + string.Join("/", v.Loaders) : ""),
             Recommended = v == recommended,
             Tag = v
@@ -3857,21 +3857,21 @@ public class MainViewModel : BaseViewModel
         int recIdx = choices.FindIndex(c => c.Recommended);
 
         var picked = VersionPickerWindow.ShowPick(
-            $"Версия — {mod.Title}",
-            "Помеченная версия совместима с вашим профилем. Остальные — для других версий игры.",
+            $"cyr270",
+            "cyr271",
             choices, recIdx);
         if (picked?.Tag is not ModrinthVersion version) return;
 
         await DownloadModVersionAsync(mod, version);
     }
 
-    /// <summary>Отдельный выбор файла CurseForge.</summary>
+    
     public async Task ShowCurseForgeVersionsAsync(CurseForgeMod mod)
     {
         if (CurrentProfile == null) return;
 
         IsBusy = true;
-        Status = $"Получение файлов {mod.Name}...";
+        Status = $"cyr272";
         List<CurseForgeFile> files;
         try
         {
@@ -3882,8 +3882,8 @@ public class MainViewModel : BaseViewModel
 
         if (files.Count == 0)
         {
-            Status = "Нет доступных файлов для загрузки";
-            ShowToast("Нет доступных файлов");
+            Status = "cyr273";
+            ShowToast("cyr274");
             return;
         }
 
@@ -3900,23 +3900,23 @@ public class MainViewModel : BaseViewModel
         int recIdx = choices.FindIndex(c => c.Recommended);
 
         var picked = VersionPickerWindow.ShowPick(
-            $"Файл — {mod.Name}",
-            "Помеченный файл совместим с вашим профилем.",
+            $"cyr275",
+            "cyr276",
             choices, recIdx);
         if (picked?.Tag is not CurseForgeFile file) return;
 
         IsBusy = true; DlProgress = 0;
-        Status = $"Установка {mod.Name} {file.DisplayName}...";
+        Status = $"cyr277";
         try
         {
             var progress = new Progress<DownloadProgress>(p =>
-                Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); Status = $"Загрузка: {p.FileName}"; }));
+                Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); Status = $"cyr278"; }));
             await _mods.DownloadCurseForgeFileAsync(file, CurrentProfile.Id, progress);
-            Status = $"{mod.Name} установлен";
-            ShowToast("Мод установлен ✓");
+            Status = $"cyr279";
+            ShowToast("cyr280");
             LoadMods();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr281"; }
         finally { FinishDownload(); }
     }
 
@@ -3924,17 +3924,17 @@ public class MainViewModel : BaseViewModel
     {
         if (CurrentProfile == null) return;
         IsBusy = true; DlProgress = 0;
-        Status = $"Установка {mod.Title} {version.VersionNumber}...";
+        Status = $"cyr282";
         try
         {
             var progress = new Progress<DownloadProgress>(p =>
-                Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); Status = $"Загрузка: {p.FileName}"; }));
+                Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); Status = $"cyr283"; }));
             await _mods.DownloadModrinthVersionAsync(version, _mods.GetModsDir(CurrentProfile.Id), progress);
-            Status = $"{mod.Title} {version.VersionNumber} установлен";
-            ShowToast("Мод установлен ✓");
+            Status = $"cyr284";
+            ShowToast("cyr285");
             LoadMods();
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr286"; }
         finally { FinishDownload(); }
     }
 
@@ -3942,40 +3942,40 @@ public class MainViewModel : BaseViewModel
     {
         if (CurrentProfile == null || EditModLoader == "Vanilla")
         {
-            Status = "Выберите загрузчик (Forge/Fabric)";
+            Status = "cyr287";
             return;
         }
 
-        IsBusy = true; Status = $"Установка {EditModLoader}...";
+        IsBusy = true; Status = $"cyr288";
         try
         {
             var progress = new Progress<DownloadProgress>(p =>
-                Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; Status = $"Установка: {p.FileName}"; }));
+                Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; Status = $"cyr289"; }));
 
             string loaderVersion = EditModLoaderVersion;
             string sodiumNote = "";
 
             if (EditModLoader == "Fabric")
             {
-                // Автоматически берём последнюю стабильную версию Fabric, если не указана
+                
                 if (string.IsNullOrWhiteSpace(loaderVersion))
                 {
-                    Status = "Поиск последней версии Fabric...";
+                    Status = "cyr290";
                     loaderVersion = await _mods.GetLatestFabricLoaderAsync(CurrentProfile.VersionId) ?? "";
                 }
                 if (string.IsNullOrEmpty(loaderVersion))
                 {
-                    Status = "Не удалось найти версию Fabric для " + CurrentProfile.VersionId;
+                    Status = "cyr291" + CurrentProfile.VersionId;
                     return;
                 }
                 await _mods.InstallFabricAsync(CurrentProfile.VersionId, loaderVersion, progress);
 
                 var extras = new List<string>();
 
-                // Вместе с Fabric сразу ставим Sodium (оптимизация графики)
+                
                 try
                 {
-                    Status = "Установка Sodium...";
+                    Status = "cyr292";
                     var sodiumOk = await _mods.DownloadModrinthProjectAsync(
                         "AANobbMI", CurrentProfile.VersionId, "fabric",
                         _mods.GetModsDir(CurrentProfile.Id), progress);
@@ -3984,7 +3984,7 @@ public class MainViewModel : BaseViewModel
                 }
                 catch { }
 
-                // DED Mod (чат-мост, скин, плащ) — только если собран под эту версию MC
+                
                 if (ModService.IsDedModCompatible(CurrentProfile.VersionId))
                 {
                     try { EnsureDedMod(); extras.Add("DED Mod"); } catch { }
@@ -3996,7 +3996,7 @@ public class MainViewModel : BaseViewModel
             {
                 if (string.IsNullOrWhiteSpace(loaderVersion))
                 {
-                    Status = "Укажите версию Forge";
+                    Status = "cyr293";
                     return;
                 }
                 await _mods.InstallForgeAsync(CurrentProfile.VersionId, loaderVersion, progress);
@@ -4005,14 +4005,14 @@ public class MainViewModel : BaseViewModel
             {
                 if (string.IsNullOrWhiteSpace(loaderVersion))
                 {
-                    Status = "Поиск последней версии OptiFine...";
+                    Status = "cyr294";
                     var versions = await _mods.GetOptiFineVersionsAsync(CurrentProfile.VersionId);
                     if (versions.Count == 0)
                     {
-                        Status = "Нет версий OptiFine для " + CurrentProfile.VersionId;
+                        Status = "cyr295" + CurrentProfile.VersionId;
                         return;
                     }
-                    // BMCLAPI отдаёт версии по возрастанию — последняя самая свежая
+                    
                     var latest = versions[^1];
                     loaderVersion = $"{latest.Type}_{latest.Patch}";
                 }
@@ -4023,10 +4023,10 @@ public class MainViewModel : BaseViewModel
             CurrentProfile.ModLoaderVersion = loaderVersion;
             SaveProfile(CurrentProfile);
             await RefreshInstalledVersions();
-            Status = $"{EditModLoader} {loaderVersion} установлен{sodiumNote}";
+            Status = $"cyr296";
             if (EditModLoader == "Fabric" && sodiumNote.Contains("+ Sodium"))
-                ShowToast("Fabric + Sodium установлены ✓");
-        }        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+                ShowToast("cyr297");
+        }        catch (Exception ex) { Status = $"cyr298"; }
         finally { IsBusy = false; DlFile = ""; }
     }
 
@@ -4062,51 +4062,51 @@ public class MainViewModel : BaseViewModel
         catch { }
     }
 
-    // ═══════════════ SKINS ═══════════════
+    
 
     private void SelectSkin()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Выберите скин (развёрнутая PNG-текстура)",
-            Filter = "PNG скин (*.png)|*.png"
+            Title = "cyr299",
+            Filter = "cyr300"
         };
 
         if (dialog.ShowDialog() == true)
         {
-            Log($"Выбран файл скина: {dialog.FileName}");
+            Log($"cyr301");
             var (valid, w, h) = _skins.ValidateSkin(dialog.FileName);
-            Log($"Проверка скина: valid={valid}, {w}x{h}");
+            Log($"cyr302");
             if (!valid)
             {
-                SkinStatus = $"Недопустимый размер {w}x{h}. Нужен квадратный скин (64x64, 128x128 и т.п.)";
-                MessageBox.Show($"Скин должен быть квадратным PNG (64x64, 128x128).\nТекущий: {w}x{h}",
-                    "Ошибка скина", MessageBoxButton.OK, MessageBoxImage.Warning);
+                SkinStatus = $"cyr303";
+                MessageBox.Show($"cyr304",
+                    "cyr305", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             try
             {
-                // Приводим к стандартному размеру (уменьшаем квадрат до 64x64, если нужно)
+                
                 var prepared = _skins.PrepareSkin(dialog.FileName);
 
                 string username = string.IsNullOrWhiteSpace(Account.Username) ? "player" : Account.Username;
                 var savedPath = _skins.SaveSkin(prepared, username);
-                Log($"Скин сохранён: {savedPath}");
+                Log($"cyr306");
 
                 Account.SkinPath = savedPath;
                 SaveAccount();
 
                 LoadSkinPreview(savedPath);
-                SkinStatus = $"Скин установлен для {username}";
-                Status = $"Скин применён: {username}";
-                ShowToast("Скин применён ✓");
+                SkinStatus = $"cyr307";
+                Status = $"cyr308";
+                ShowToast("cyr309");
             }
             catch (Exception ex)
             {
-                Log($"Ошибка установки скина: {ex}");
-                SkinStatus = "Не удалось установить скин";
-                MessageBox.Show("Не удалось установить скин: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Log($"cyr310");
+                SkinStatus = "cyr311";
+                MessageBox.Show("cyr312" + ex.Message, "cyr313", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
@@ -4117,7 +4117,7 @@ public class MainViewModel : BaseViewModel
         SaveAccount();
         SkinHeadPreview = null;
         SkinFullPreview = null;
-        SkinStatus = "Скин не установлен";
+        SkinStatus = "cyr314";
     }
 
     public void LoadSkinPreview(string? skinPath)
@@ -4132,15 +4132,15 @@ public class MainViewModel : BaseViewModel
         SkinFullPreview = _skins.GetFullPreview(skinPath);
     }
 
-    private string _capeStatus = "Плащ не установлен";
+    private string _capeStatus = "cyr315";
     public string CapeStatus { get => _capeStatus; set => SetProperty(ref _capeStatus, value); }
 
     public void SelectCape()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Выберите плащ (PNG 64x32 или 64x64)",
-            Filter = "PNG плащ (*.png)|*.png"
+            Title = "cyr316",
+            Filter = "cyr317"
         };
         if (dialog.ShowDialog() != true) return;
 
@@ -4149,47 +4149,47 @@ public class MainViewModel : BaseViewModel
             var (valid, w, h) = _skins.ValidateSkin(dialog.FileName);
             if (!valid)
             {
-                MessageBox.Show($"Плащ должен быть PNG 64x32 или 64x64.\nТекущий: {w}x{h}", "Ошибка плаща",
+                MessageBox.Show($"cyr318", "cyr319",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             var saved = _skins.SaveCape(dialog.FileName, Account.Username);
-            CapeStatus = $"Плащ установлен для {Account.Username}";
+            CapeStatus = $"cyr320";
             LoadCapePreview();
-            Status = "Плащ применён (виден всем игрокам с DED Mod)";
-            ShowToast("Плащ применён ✓");
+            Status = "cyr321";
+            ShowToast("cyr322");
         }
         catch (Exception ex)
         {
-            CapeStatus = "Не удалось установить плащ";
-            Status = $"Ошибка плаща: {ex.Message}";
+            CapeStatus = "cyr323";
+            Status = $"cyr324";
         }
     }
 
     public void RemoveCape()
     {
         _skins.RemoveCape(Account.Username);
-        CapeStatus = "Плащ не установлен";
+        CapeStatus = "cyr325";
         CapePreview = null;
-        Status = "Плащ убран";
-        ShowToast("Плащ убран");
+        Status = "cyr326";
+        ShowToast("cyr327");
     }
 
-    // ═══════════════ ОПТИМИЗАЦИЯ (пак модов) ═══════════════
+    
 
     private static readonly string[] OptimizationSlugs = { "sodium", "lithium", "ferritecore" };
 
     private bool _optimizing;
     public bool Optimizing { get => _optimizing; set => SetProperty(ref _optimizing, value); }
 
-    /// <summary>Пак оптимизации установлен (Sodium + Lithium + FerriteCore в папке модов).</summary>
+    
     public bool OptimizationInstalled => CurrentProfile != null &&
         OptimizationSlugs.All(slug => Directory.GetFiles(_mods.GetModsDir(CurrentProfile.Id), "*.jar")
             .Any(f => Path.GetFileName(f).ToLower().Contains(slug)));
 
-    public string OptimizationButtonText => OptimizationInstalled ? "✕ Убрать оптимизацию" : "⚡ Оптимизация";
+    public string OptimizationButtonText => OptimizationInstalled ? "cyr328" : "cyr329";
 
-    /// <summary>Тумблер: ставит или убирает пак оптимизации (Sodium + Lithium + FerriteCore).</summary>
+    
     public async Task ToggleOptimizationPackAsync()
     {
         if (CurrentProfile == null || Optimizing) return;
@@ -4197,7 +4197,7 @@ public class MainViewModel : BaseViewModel
 
         if (OptimizationInstalled)
         {
-            // Убираем пак оптимизации
+            
             try
             {
                 var modsDir = _mods.GetModsDir(CurrentProfile.Id);
@@ -4214,47 +4214,47 @@ public class MainViewModel : BaseViewModel
                 OnPropertyChanged(nameof(OptimizationButtonText));
                 if (failed)
                 {
-                    Status = "Часть модов занята — закройте игру и повторите";
-                    ShowToast("Закройте игру и повторите");
+                    Status = "cyr330";
+                    ShowToast("cyr331");
                 }
                 else
                 {
-                    Status = "Пак оптимизации убран";
-                    ShowToast("Оптимизация убрана");
+                    Status = "cyr332";
+                    ShowToast("cyr333");
                 }
             }
-            catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+            catch (Exception ex) { Status = $"cyr334"; }
             finally { Optimizing = false; }
             return;
         }
 
-        // Ставим пак оптимизации
+        
         IsBusy = true;
-        Status = "Установка пакета оптимизации...";
+        Status = "cyr335";
         try
         {
             var loader = CurrentProfile.ModLoader == "Vanilla" ? "fabric" : CurrentProfile.ModLoader.ToLower();
             var modsDir = _mods.GetModsDir(CurrentProfile.Id);
             foreach (var slug in OptimizationSlugs)
             {
-                // Уже установлен — пропускаем (иначе перекачиваем занятый файл)
+                
                 if (Directory.GetFiles(modsDir, "*.jar").Any(f => Path.GetFileName(f).ToLower().Contains(slug)))
                     continue;
 
                 var results = await _mods.SearchModrinthAsync(slug, "", "", 5);
                 var mod = results.FirstOrDefault(r => r.Slug == slug || r.Title.Contains(slug, StringComparison.OrdinalIgnoreCase));
-                if (mod == null) { Status = $"Не найден: {slug}"; continue; }
+                if (mod == null) { Status = $"cyr336"; continue; }
                 var progress = new Progress<DownloadProgress>(p =>
-                    Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); Status = $"Оптимизация: {p.FileName}"; }));
+                    Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; ReportProgress(p.Percentage); Status = $"cyr337"; }));
                 await _mods.DownloadModrinthModAsync(mod, CurrentProfile.VersionId, loader, CurrentProfile.Id, progress);
             }
             LoadMods();
             OnPropertyChanged(nameof(OptimizationInstalled));
             OnPropertyChanged(nameof(OptimizationButtonText));
-            Status = "Пак оптимизации установлен: Sodium, Lithium, FerriteCore";
-            ShowToast("Пак оптимизации установлен ✓");
+            Status = "cyr338";
+            ShowToast("cyr339");
         }
-        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        catch (Exception ex) { Status = $"cyr340"; }
         finally { Optimizing = false; FinishDownload(); }
     }
 }
@@ -4319,7 +4319,7 @@ public class VersionOption
     public bool IsOld => Type is "old_alpha" or "old_beta";
     public string TypeLabel => Type switch
     {
-        "snapshot" => "Снапшот",
+        "snapshot" => "cyr341",
         "old_alpha" => "Alpha",
         "old_beta" => "Beta",
         _ => ""
@@ -4346,7 +4346,7 @@ public class ServerEntry : INotifyPropertyChanged
     private string _ping = "—";
     public string Ping { get => _ping; set { _ping = value; Notify(); } }
 
-    public bool IsOnline => _online != "—" && !_online.StartsWith("оффлайн", StringComparison.OrdinalIgnoreCase);
+    public bool IsOnline => _online != "—" && !_online.StartsWith("cyr342", StringComparison.OrdinalIgnoreCase);
 
     public System.Windows.Media.Brush StatusBrush => IsOnline
         ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2ECC71"))
@@ -4431,10 +4431,10 @@ public class FriendEntry : INotifyPropertyChanged
     {
         get
         {
-            if (_isTyping) return "печатает...";
-            if (!IsOnline) return LastOnline == DateTime.MinValue ? "оффлайн" : "был(а) " + HumanizeAgo(LastOnline);
+            if (_isTyping) return "cyr343";
+            if (!IsOnline) return LastOnline == DateTime.MinValue ? "cyr344" : "cyr345" + HumanizeAgo(LastOnline);
             if (!string.IsNullOrEmpty(Status)) return Status;
-            return string.IsNullOrEmpty(Server) ? "в меню" : Server;
+            return string.IsNullOrEmpty(Server) ? "cyr346" : Server;
         }
     }
 
@@ -4444,10 +4444,10 @@ public class FriendEntry : INotifyPropertyChanged
     public static string HumanizeAgo(DateTime utc)
     {
         var span = DateTime.UtcNow - utc;
-        if (span.TotalMinutes < 1) return "только что";
-        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes} мин назад";
-        if (span.TotalHours < 24) return $"{(int)span.TotalHours} ч назад";
-        if (span.TotalDays < 7) return $"{(int)span.TotalDays} дн назад";
+        if (span.TotalMinutes < 1) return "cyr347";
+        if (span.TotalMinutes < 60) return $"cyr348";
+        if (span.TotalHours < 24) return $"cyr349";
+        if (span.TotalDays < 7) return $"cyr350";
         return utc.ToLocalTime().ToString("dd.MM");
     }
 
@@ -4506,7 +4506,7 @@ public class GroupChat : INotifyPropertyChanged
         set { _onlineCount = value; Notify(); Notify(nameof(OnlineLabel)); }
     }
     [JsonIgnore]
-    public string OnlineLabel => OnlineCount > 0 ? $"{OnlineCount} онлайн" : "";
+    public string OnlineLabel => OnlineCount > 0 ? $"cyr351" : "";
 
     public string DisplayName => string.IsNullOrEmpty(Name) ? Code : Name;
 
@@ -4522,7 +4522,7 @@ public class ChatLine
     public DateTime Time { get; set; } = DateTime.Now;
     public bool IsMine { get; set; }
 
-    /// <summary>Карточка приглашения на сервер (вместо обычного сообщения).</summary>
+    
     public string InviteServer { get; set; } = "";
 
     [JsonIgnore]

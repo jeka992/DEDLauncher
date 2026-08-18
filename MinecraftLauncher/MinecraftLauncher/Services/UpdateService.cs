@@ -3,19 +3,19 @@ using System.Text.RegularExpressions;
 
 namespace DedLauncher.Services;
 
-/// <summary>
-/// Проверка обновлений через Telegram-канал: лаунчер парсит публичную
-/// веб-версию канала (t.me/s/{канал} с зеркалами) и ищет последний пост
-/// #update с версией и ссылкой на скачивание.
-///
-/// Новые версии раздаются вручную (Telegram/Discord): лаунчер только
-/// показывает, что есть обновление, и открывает ссылку в браузере.
-/// Установка новой копии сама предлагает обновить существующую.
-///
-/// Формат поста в канале:
-///   #update 2.0.1
-///   https://.../DEDLauncher_2.0.1.zip
-/// </summary>
+
+
+
+
+
+
+
+
+
+
+
+
+
 public static class UpdateService
 {
     public class UpdateInfo
@@ -42,7 +42,7 @@ public static class UpdateService
         "https://tg.i-c-a.su/s/{0}"
     };
 
-    /// <summary>Ищет в канале последний пост #update. null — ничего нет или канал недоступен.</summary>
+    
     public static async Task<UpdateInfo?> CheckTgAsync(string channel)
     {
         if (string.IsNullOrWhiteSpace(channel)) return null;
@@ -93,12 +93,12 @@ public static class UpdateService
             var links = Regex.Matches(segment, "href=\"(https?://[^\"]+)\"")
                 .Cast<Match>()
                 .Select(m => System.Net.WebUtility.HtmlDecode(m.Groups[1].Value))
-                .Where(u => !u.Contains("?q=%23", StringComparison.OrdinalIgnoreCase)   // хештеги
-                            && !u.EndsWith("/s/", StringComparison.OrdinalIgnoreCase)) // сам канал
+                .Where(u => !u.Contains("?q=%23", StringComparison.OrdinalIgnoreCase)   
+                            && !u.EndsWith("/s/", StringComparison.OrdinalIgnoreCase)) 
                 .ToList();
 
-            // Внешняя ссылка в приоритете, иначе — ссылка на пост t.me
-            // (документ, залитый прямо в Telegram, ссылается на пост)
+            
+            
             var url = links.FirstOrDefault(u => !u.Contains("t.me/", StringComparison.OrdinalIgnoreCase)
                                                 && !u.Contains("telegram.org", StringComparison.OrdinalIgnoreCase))
                       ?? links.FirstOrDefault();
@@ -126,7 +126,7 @@ public static class UpdateService
         return new UpdateInfo { Version = verMatch.Groups[1].Value, Url = url, Text = text.Trim() };
     }
 
-    /// <summary>Сравнение версий: >0 если a новее b.</summary>
+    
     public static int CompareVersions(string a, string b)
     {
         var pa = ParseVersion(a);

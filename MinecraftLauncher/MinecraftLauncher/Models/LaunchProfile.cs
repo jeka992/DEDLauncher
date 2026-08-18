@@ -6,7 +6,7 @@ namespace DedLauncher.Models;
 public class LaunchProfile : INotifyPropertyChanged
 {
     private string _id = Guid.NewGuid().ToString("N")[..8];
-    private string _name = "Новый профиль";
+    private string _name = "cyr1";
     private string _versionId = "1.21.1";
     private string _versionType = "release";
     private string _modLoader = "Vanilla";

@@ -9,17 +9,17 @@ using DedLauncher.Helpers;
 
 namespace DedLauncher.Services;
 
-/// <summary>
-/// Модуль подчинения: лаунчер слушает команды мод-приложения DEDAdmin
-/// и шлёт статусы через публичный MQTT-брокер.
-///
-/// Темы (namespace dedadm/v1):
-///   st/{deviceId}   — статус игрока (админ подписан на st/+)
-///   all             — анонсы для всех (retained)
-///   one/{deviceId}  — персональные команды (запрос диагностики)
-///   banlist         — бан-лист (retained)
-///   diag/{deviceId} — ответы диагностики
-/// </summary>
+
+
+
+
+
+
+
+
+
+
+
 public class AdminClientService : IDisposable
 {
     private const string Prefix = "dedadm/v1/";
@@ -30,17 +30,17 @@ public class AdminClientService : IDisposable
     private readonly System.Threading.Timer _heartbeat;
     private List<BanEntry> _bans = new();
 
-    /// <summary>Уникальный ID копии лаунчера (генерируется один раз).</summary>
+    
     public string DeviceId { get; }
 
     public string Nick { get; set; } = "";
     public string AccountType { get; set; } = "offline";
     public string McVersion { get; set; } = "";
     public string Loader { get; set; } = "";
-    public string GameState { get; set; } = "online"; // online | playing
+    public string GameState { get; set; } = "online"; 
     public string Server { get; set; } = "";
 
-    public event Action<string, string>? AnnouncementReceived; // id, text
+    public event Action<string, string>? AnnouncementReceived; 
 
     public AdminClientService()
     {
@@ -134,7 +134,7 @@ public class AdminClientService : IDisposable
         await SubscribeAsync(Prefix + "one/" + DeviceId);
     }
 
-    /// <summary>Публикует текущий статус копии лаунчера.</summary>
+    
     public async Task PublishStatusAsync(string? state = null, string? server = null)
     {
         if (state != null) GameState = state;
@@ -166,7 +166,7 @@ public class AdminClientService : IDisposable
         catch { }
     }
 
-    /// <summary>Забанена ли эта копия лаунчера (по последнему известному бан-листу).</summary>
+    
     public bool IsBanned(out string reason, out DateTime? until)
     {
         reason = "";
@@ -178,7 +178,7 @@ public class AdminClientService : IDisposable
             if (ban.Until > 0)
             {
                 var u = DateTimeOffset.FromUnixTimeSeconds(ban.Until).LocalDateTime;
-                if (u <= DateTime.Now) return false; // срок вышел
+                if (u <= DateTime.Now) return false; 
                 until = u;
             }
             reason = ban.Reason;
@@ -187,7 +187,7 @@ public class AdminClientService : IDisposable
         catch { return false; }
     }
 
-    /// <summary>Отвечает на запрос диагностики админа.</summary>
+    
     private async Task RespondDiagnosticsAsync(string reqId)
     {
         try

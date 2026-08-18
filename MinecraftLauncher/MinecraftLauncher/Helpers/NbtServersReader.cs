@@ -3,10 +3,10 @@ using System.Text;
 
 namespace DedLauncher.Helpers;
 
-/// <summary>
-/// Читает сервера из minecraft servers.dat (NBT, gzip).
-/// Минимальный NBT-парсер: Compound, List, String, Int, Byte, Long, ByteArray(пропуск).
-/// </summary>
+
+
+
+
 public static class NbtServersReader
 {
     public record McServer(string Name, string Ip, int Port, string? IconBase64);
@@ -21,7 +21,7 @@ public static class NbtServersReader
             byte[] raw = File.ReadAllBytes(path);
             byte[] data;
 
-            // servers.dat лежит в gzip (первые байты 1F 8B)
+            
             if (raw.Length > 2 && raw[0] == 0x1F && raw[1] == 0x8B)
             {
                 using var gz = new GZipStream(new MemoryStream(raw), CompressionMode.Decompress);
@@ -49,7 +49,7 @@ public static class NbtServersReader
                         var ip = server.GetString("ip") ?? "";
                         var port = server.GetInt("port", 25565);
                         if (string.IsNullOrEmpty(ip)) continue;
-                        // В ip может быть вшит порт? В новых версиях порт отдельным интом.
+                        
                         result.Add(new McServer(
                             string.IsNullOrEmpty(name) ? ip : name,
                             ip,
@@ -96,7 +96,7 @@ public static class NbtServersReader
         public string StringValue = "";
         public int IntValue;
         public long LongValue;
-        public int Length;          // для массивов
+        public int Length;          
         public byte[] Bytes = Array.Empty<byte>();
     }
 
@@ -134,7 +134,7 @@ public static class NbtServersReader
                     var compound = new NbtCompound();
                     while ((NbtType)_data[_pos] != NbtType.End)
                         compound.Children.Add(ReadTag());
-                    _pos++; // TAG_End
+                    _pos++; 
                     return compound;
 
                 case NbtType.List:
@@ -170,7 +170,7 @@ public static class NbtServersReader
                     return new NbtValue { Type = type, Length = len };
 
                 default:
-                    // Float/Double — пропускаем 4/8 байт
+                    
                     _pos += type == NbtType.Float ? 4 : 8;
                     return new NbtValue { Type = type };
             }
