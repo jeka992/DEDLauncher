@@ -1,0 +1,143 @@
+<Window x:Class="DedLauncher.VersionPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Выбор версии"
+        Width="520" Height="460"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        Background="{StaticResource BgDeepBrush}"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVis"/>
+
+        <!-- Кнопка закрытия окна -->
+        <Style x:Key="WinBtnClose" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextFaintBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="6"
+                                Margin="4,2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#4DB30000"/>
+                                <Setter Property="Foreground" Value="{StaticResource WhiteBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Строка версии в списке -->
+        <Style x:Key="VerItem" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="12,9"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BgHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#33B30000"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{StaticResource BgDeepBrush}"
+            BorderBrush="{StaticResource BorderLightBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="42"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Заголовок окна (перетаскивание) -->
+            <Border Grid.Row="0" Background="{StaticResource BgHeaderBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="16,0">
+                    <TextBlock x:Name="TitleText" Text="Выбор версии" FontSize="13" FontWeight="Bold"
+                               VerticalAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
+                    <Button Content="✕" Style="{StaticResource WinBtnClose}" Width="28" Height="24"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Click="Close_Click"/>
+                </Grid>
+            </Border>
+
+            <TextBlock Grid.Row="1" x:Name="SubText"
+                       Text="Выберите версию для установки"
+                       FontSize="10" Foreground="{StaticResource TextFaintBrush}"
+                       Margin="18,12,18,10" TextWrapping="Wrap"/>
+
+            <!-- Список версий -->
+            <ListBox Grid.Row="2" x:Name="VersionsList" ItemContainerStyle="{StaticResource VerItem}"
+                     Background="Transparent" BorderThickness="0"
+                     Margin="12,0,12,8"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     MouseDoubleClick="VersionsList_MouseDoubleClick"
+                     SelectionChanged="VersionsList_SelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Sub}" FontSize="10"
+                                           Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="{DynamicResource AccentBrush}" CornerRadius="4"
+                                    Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center"
+                                    Visibility="{Binding Recommended, Converter={StaticResource BoolVis}}">
+                                <TextBlock Text="ПОДХОДИТ" FontSize="8" FontWeight="Bold" Foreground="White"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Кнопки -->
+            <Border Grid.Row="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
+                    Background="{StaticResource BgPanelBrush}">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12">
+                    <Button x:Name="OkBtn" Content="Скачать" Style="{StaticResource BtnRed}"
+                            Width="120" Height="34" Margin="0,0,8,0"
+                            Click="Ok_Click"/>
+                    <Button Content="Отмена" Style="{StaticResource BtnOutline}"
+                            Width="100" Height="34"
+                            Click="Cancel_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
