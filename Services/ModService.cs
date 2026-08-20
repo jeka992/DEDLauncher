@@ -669,7 +669,8 @@ public class ModService : IDisposable
 
     private const string CfWidgetApi = "https://api.cfwidget.com";
 
-    // Популярные проекты CurseForge по категориям (слаги) для поиска без API-ключа
+    // Популярные проекты CurseForge по категориям (слаги) для поиска без API-ключа.
+    // Чем больше список — тем больше страниц в прокрутке (как у Modrinth).
     private static readonly string[] PopularCurseForgeMods =
     {
         "sodium", "iris", "lithium", "fabric-api", "jei", "journeymap",
@@ -677,7 +678,42 @@ public class ModService : IDisposable
         "applied-energistics-2", "refined-storage", "quark", "waystones",
         "mouse-tweaks", "mod-menu", "continuity", "lambdynamiclights",
         "emi", "wthit", "roughly-enough-items", "curios",
-        "iron-chests", "storage-drawers", "controlling", "trashslot"
+        "iron-chests", "storage-drawers", "controlling", "trashslot",
+        "optifine", "sodium-extra", "reeses-sodium-options", "entityculling",
+        "indium", "moderately-enough-items", "lazydfu", "smoothboot-fabric",
+        "ferritecore", "krypton", "starlight", "lithium-fabric", "cave-spider",
+        "balm", "architectury-api", "cloth-config", "owo-lib", "fabric-language-kotlin",
+        "satin", "malilib", "ok-zoomer", "tweakeroo", "minihud", "litematica",
+        "fallingtree", "tree-chopper", "voxelmap", "xaeros-world-map", "journeymap-fabric",
+        "betterf3", "dark-loading-screen", "no-chat-reports", "capes", "cosmetica",
+        "skin-layers-3d", "skin-restorer", "mobends", "first-person-model", "shoulder-surfing",
+        "3dskinlayers", "presence-footsteps", "sound-physics-remastered", "dynamic-surroundings",
+        "ambient-environment", "enhanced-weather", "serene-seasons", "terraforged",
+        "biomes-o-plenty", "oh-the-biomes-weve-gone", "terralith", "tectonic", "amplified-nether",
+        "caves-and-cliffs-backport", "netherportalfix", "better-nether", "when-dungeons-arise",
+        "dungeons-and-taverns", "greek-fantasy", "minecraft-battlegear", "bettercombat",
+        "paraglider", "sophisticated-backpacks", "travelers-backpack", "ender-backpack",
+        "curios-api", "artifacts", "spelunkery", "waystones-forge", "guard-villagers",
+        "friendly-fire", "gravestone", "corpse", "death-chest", "simple-voice-chat",
+        "voice-chat-interaction", "plasmo-voice", "fabric-voice-chat-interaction",
+        "flesh2leather", "more-mob-variants", "spiders-2-0", "custom-npcs", "citadel",
+        "geckolib", "playeranimator", "not-enough-animations", "better-animations",
+        "sophisticated-core", "sophisticated-storage", "functional-storage", "iron-furnaces",
+        "chipped", "handcrafted", "carpet", "quarkoddities", "supplementaries", "decorative-blocks",
+        "macaws-furniture", "macaws-bridges", "macaws-roofs", "macaws-doors", "macaws-trapdoors",
+        "domestication-innovation", "alexs-mobs", "alexs-caves", "alexs-delight", "critters-and-creatures",
+        "fins-and-tails", "naturalist", "frozen-up", "adventurez", "cataclysm", "bosses-of-mass-destruction",
+        "monster-plus", "nether-s-minecraft", "slash-blade", "elytra-slot", "elytra-trinket",
+        "sophisticated-elytra", "origins", "origins-plus-plus", "extra-origins", "pehkui",
+        "apoli", "calio", "mob-battle-mod", "graveyard", "lootr", "yungs-better-mineshafts",
+        "yungs-better-strongholds", "yungs-better-dungeons", "yungs-better-nether-fortresses",
+        "yungs-cave-biomes", "yungs-bridges", "structure-village-enhancements", "villager-names",
+        "spawnerfix", "mob-grinding-utils", "just-enough-advancements", "hwyla", "waila",
+        "jade", "the-one-probe", "cat-jam", "entity-texture-features", "entity-model-features",
+        "emissive-ores", "iris-shaders", "oculus", "magnesium", "rubidium", "chlorine",
+        "sodium-reforged", "canvas-renderer", "physics-mod", "iceberg", "cull-leaves",
+        "cull-particles", "better-clouds", "farsight", "lazy-language-loader", "dash-loader",
+        "language-reload", "view-distance-mods", "spark", "chunk-sending", "fast-loading-screen"
     };
 
     private static readonly string[] PopularCurseForgeResourcePacks =
@@ -686,7 +722,22 @@ public class ModService : IDisposable
         "stay-true", "dramatic-skys", "dokucraft-light", "pixel-perfection",
         "battered-old-stuff", "smooth-operator", "soft-bits", "dandelion",
         "summerfields", "faithful-64x", "default-hd", "enhanced-default",
-        "vividity", "jicklus", "excalibur", "dandelion-x", "alacrity", "nature-x"
+        "vividity", "jicklus", "excalibur", "dandelion-x", "alacrity", "nature-x",
+        "misa-s-realistic", "classic-3d", "modern-arch-pbr", "dokucraft-high",
+        "lithos-core-32x", "soartex-fanver", "sphax-purebdcraft", "jstr", "vanilla-tweaks",
+        "fps-reducer", "low-on-fire", "no-ambient-occlusion", "clean-gui", "quark-away",
+        "3d-forest", "all-the-mods-3d", "round-tree", "better-mc", "complementary",
+        "awakened-crystals", "bare-bones", "dungeons-dlc", "mythic-textures",
+        "xray-ultimate", "redstone-ready", "magic-texture-pack", "kancolle-texture",
+        "anime-pack", "waifu-pack", "cute-mobs", "cute-pack", "pixel-art-packs",
+        "8-bit-texture", "retro-pack", "dragon-textures", "dragon-overhaul",
+        "realistic-textures", "photorealism", "fancy-hd", "ultra-hd-textures",
+        "scifi-textures", "space-pack", "ender-pack", "nether-pack", "ocean-pack",
+        "cave-pack", "dungeon-pack", "village-pack", "war-pack", "medieval-pack",
+        "fantasy-pack", "kingdoms-pack", "steampunk-pack", "cyberpunk-pack",
+        "futuristic-pack", "modern-pack", "minimal-pack", "simple-pack", "clean-pack",
+        "smooth-pack", "polished-pack", "vibrant-pack", "colorful-pack", "pastel-pack",
+        "dark-pack", "light-pack", "shadow-pack", "glow-pack", "crystal-pack"
     };
 
     private static readonly string[] PopularCurseForgeShaders =
@@ -695,7 +746,18 @@ public class ModService : IDisposable
         "sildurs-vibrant-shaders", "sildurs-basic-shaders", "sildurs-enhanced-default",
         "nostalgia-shader", "solstice", "super-duper-vanilla-shaders", "bliss-shader",
         "spectrum-shaders", "mellow", "pastel-shaders", "hysteria-shaders",
-        "oceano-shaders", "lux-shaders"
+        "oceano-shaders", "lux-shaders", "complementary", "chocapic13", "chocapic13-v6",
+        "chocapic13-v7", "chocapic13-v8", "chocapic13-v9", "kuda-shaders", "kuda-v6",
+        "sora-shaders", "sora-v1", "seus-renewed", "seus-v11", "seus-v10", "seus-v8",
+        "seus-preview", "seus-ptgi", "seus-hr", "bsl-v8", "bsl-v7", "projectluma",
+        "project-luma", "luma-shaders", "ragnar-shader", "distant-horizons", "nostalgia-v3",
+        "vanillashaders", "vibrant-shaders", "vibrant-v2", "dramatic-skies", "bloom-shaders",
+        "astro-shaders", "cel-shading", "clean-shaders", "classic-shaders", "kadir-shaders",
+        "psychedelic-shaders", "shaders-labs", "simple-shaders", "snowy-shaders",
+        "waving-shaders", "water-shaders", "wavy-shaders", "zephyr-shaders", "photon-shaders",
+        "photon-main", "photon-2", "whisper-shaders", "tea-shaders", "teashaders",
+        "molten-vfx", "mad-scientist-shaders", "frellas-shaders", "infinite-shaders",
+        "kitsunebi-shaders", "trilitons-shaders", "triliton-shader", "faded-shaders"
     };
 
     public const string CfCategoryMods = "mc-mods";
