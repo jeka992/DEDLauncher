@@ -1572,17 +1572,15 @@ public class MainViewModel : BaseViewModel
     public bool IsShaderInstalledView => _showInstalledShaders;
 
     // ─── Пагинация Modrinth (бесконечная прокрутка) ───
-    /// <summary>Максимум страниц Modrinth за один каталог — чтобы прокрутка не уходила в бесконечность (как CurseForge).</summary>
-    private const int MaxModrinthPages = 10;
     private int _modOffset;
     private int _modTotalHits;
-    public bool HasMoreMods => _modOffset < _modTotalHits && _modOffset < MaxModrinthPages * 30;
+    public bool HasMoreMods => _modOffset < _modTotalHits;
     private int _rpOffset;
     private int _rpTotalHits;
-    public bool HasMoreRps => _rpOffset < _rpTotalHits && _rpOffset < MaxModrinthPages * 30;
+    public bool HasMoreRps => _rpOffset < _rpTotalHits;
     private int _shaderOffset;
     private int _shaderTotalHits;
-    public bool HasMoreShaders => _shaderOffset < _shaderTotalHits && _shaderOffset < MaxModrinthPages * 30;
+    public bool HasMoreShaders => _shaderOffset < _shaderTotalHits;
 
     // ─── Каталог CurseForge: чанковая подгрузка (CF не умеет пагинацию) ───
     private const int CfChunkSize = 12;
