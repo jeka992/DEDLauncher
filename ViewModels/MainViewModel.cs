@@ -168,12 +168,6 @@ public class MainViewModel : BaseViewModel
     }
 
     // ─── Discord ───
-    private string _discordClientId = "";
-    public string DiscordClientId { get => _discordClientId; set => SetProperty(ref _discordClientId, value); }
-
-    private string _discordClientSecret = "";
-    public string DiscordClientSecret { get => _discordClientSecret; set => SetProperty(ref _discordClientSecret, value); }
-
     /// <summary>Игра отвязана от лаунчера (лаунчер закрылся, игра продолжает работать).</summary>
     public bool GameDetached { get; set; }
     private bool _autoLogin = true;
@@ -2223,11 +2217,6 @@ public class MainViewModel : BaseViewModel
                     _softwareRendering = s.SoftwareRendering;
                     PerfSettings.SoftwareRendering = _softwareRendering;
                     OnPropertyChanged(nameof(SoftwareRendering));
-
-                    _discordClientId = s.DiscordClientId;
-                    OnPropertyChanged(nameof(DiscordClientId));
-                    _discordClientSecret = s.DiscordClientSecret;
-                    OnPropertyChanged(nameof(DiscordClientSecret));
                 }
             }
         }
@@ -2249,9 +2238,7 @@ public class MainViewModel : BaseViewModel
                 PostLaunchAction = _postLaunchAction,
                 Ipv4Only = _ipv4Only,
                 LowEndMode = _lowEndMode,
-                SoftwareRendering = _softwareRendering,
-                DiscordClientId = _discordClientId,
-                DiscordClientSecret = _discordClientSecret
+                SoftwareRendering = _softwareRendering
             };
             File.WriteAllText(SettingsPath, JsonSerializer.Serialize(s, new JsonSerializerOptions { WriteIndented = true }));
         }
@@ -4529,8 +4516,6 @@ public class LauncherSettings
     public bool Ipv4Only { get; set; } = true;
     public bool? LowEndMode { get; set; }
     public bool SoftwareRendering { get; set; }
-    public string DiscordClientId { get; set; } = "";
-    public string DiscordClientSecret { get; set; } = "";
 }
 
 public class LaunchHistoryEntry

@@ -125,16 +125,6 @@ public class DiscordAuthService
         return new DiscordUser(id, username, avatarUrl);
     }
 
-    /// <summary>UUID для Minecraft из Discord ID (детерминированный, оффлайн-режим).</summary>
-    public static string UuidFromDiscordId(string discordId)
-    {
-        var data = Encoding.UTF8.GetBytes("Discord:" + discordId);
-        var hash = MD5.HashData(data);
-        hash[6] = (byte)((hash[6] & 0x0F) | 0x30);
-        hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
-        return new Guid(hash).ToString("N");
-    }
-
     private static string GenerateCodeVerifier()
     {
         var bytes = RandomNumberGenerator.GetBytes(48);
