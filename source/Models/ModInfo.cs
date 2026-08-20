@@ -168,6 +168,9 @@ public class ModrinthFile
 
     [JsonPropertyName("primary")]
     public bool Primary { get; set; }
+
+    [JsonPropertyName("hashes")]
+    public Dictionary<string, string>? Hashes { get; set; }
 }
 
 public class CurseForgeSearchResult

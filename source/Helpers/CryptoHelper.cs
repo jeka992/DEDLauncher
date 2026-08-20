@@ -77,7 +77,11 @@ public static class CryptoHelper
         return plain;
     }
 
-    /// <summary>Ключ группового чата выводится из кода группы (членство = знание кода).</summary>
+    /// <summary>Случайный 256-битный ключ для группового чата.</summary>
+    public static byte[] NewGroupKey()
+        => RandomNumberGenerator.GetBytes(32);
+
+    /// <summary>Ключ группового чата выводится из кода группы (членство = знание кода). Устарел, используйте NewGroupKey + ECDH-передачу.</summary>
     public static byte[] GroupKey(string code)
         => SHA256.HashData(Encoding.UTF8.GetBytes("ded-grp:" + code.ToUpper()));
 }

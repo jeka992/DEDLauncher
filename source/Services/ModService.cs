@@ -13,7 +13,7 @@ using DedLauncher.Models;
 
 namespace DedLauncher.Services;
 
-public class ModService
+public class ModService : IDisposable
 {
     private const string ForgeApiUrl = "https://bmclapi2.bangbang93.com/forge/minecraft";
     private const string FabricMetaUrl = "https://meta.fabricmc.net/v2/versions";
@@ -49,9 +49,10 @@ public class ModService
         _modrinthBlocked = null;
     }
 
-    // Кэш иконок: память + диск (иконки меняются редко)
+    // Кэш иконок: память (макс 500) + диск (иконки меняются редко)
     private static readonly ConcurrentDictionary<string, ImageSource?> IconMemoryCache = new();
     private static readonly ConcurrentDictionary<string, Task<ImageSource?>> IconInflight = new();
+    private const int IconCacheMax = 500;
 
     private class ModrinthPageCache
     {
@@ -156,10 +157,20 @@ public class ModService
             catch { }
 
             IconMemoryCache[url] = icon;
+            TrimIconCache();
             return icon;
         }
         catch { return null; }
         finally { IconInflight.TryRemove(url, out _); }
+    }
+
+    private static void TrimIconCache()
+    {
+        while (IconMemoryCache.Count > IconCacheMax)
+        {
+            var key = IconMemoryCache.Keys.FirstOrDefault();
+            if (key != null) IconMemoryCache.TryRemove(key, out _);
+        }
     }
 
     private static string IconCacheFileName(string url)
@@ -448,8 +459,9 @@ public class ModService
         Directory.CreateDirectory(targetFolder);
         var destPath = Path.Combine(targetFolder, file.Filename);
 
+        var expectedSha = file.Hashes?.TryGetValue("sha256", out var sha) == true ? sha : null;
         progress?.Report(new DownloadProgress { FileName = file.Filename, TotalBytes = file.Size });
-        await DownloadFileAsync(file.Url, destPath, file.Size, progress);
+        await DownloadFileAsync(file.Url, destPath, file.Size, progress, expectedSha);
     }
 
     public async Task DownloadModrinthModAsync(ModrinthMod mod, string mcVersion, string loader, string profileId,
@@ -569,31 +581,50 @@ public class ModService
         await DownloadFileAsync(file.Url, destPath, file.Size, progress);
     }
 
-    private async Task DownloadFileAsync(string url, string destPath, long size, IProgress<DownloadProgress>? progress)
+    private static readonly TimeSpan DownloadTimeout = TimeSpan.FromMinutes(10);
+    private const long MaxDownloadBytes = 512 * 1024 * 1024; // 512 MB
+
+    private async Task DownloadFileAsync(string url, string destPath, long size, IProgress<DownloadProgress>? progress, string? expectedSha256 = null)
     {
         // Уже скачан и не пустой — не трогаем (иначе ошибка, если файл занят игрой/антивирусом)
         try
         {
             if (File.Exists(destPath) && new FileInfo(destPath).Length > 0)
             {
-                progress?.Report(new DownloadProgress { FileName = Path.GetFileName(destPath), DownloadedBytes = size, TotalBytes = size });
-                return;
+                // Если файл уже есть и хэш совпадает — пропускаем
+                if (expectedSha256 == null || VerifySha256(destPath, expectedSha256))
+                {
+                    progress?.Report(new DownloadProgress { FileName = Path.GetFileName(destPath), DownloadedBytes = size, TotalBytes = size });
+                    return;
+                }
             }
         }
         catch { }
 
-        var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        using var cts = new CancellationTokenSource(DownloadTimeout);
+        var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cts.Token);
         response.EnsureSuccessStatusCode();
 
-        await using var stream = await response.Content.ReadAsStreamAsync();
+        await using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
         await using var fs = File.Create(destPath);
+        using var hasher = expectedSha256 != null ? IncrementalHash.CreateHash(HashAlgorithmName.SHA256) : null;
         var buffer = new byte[8192];
         var read = 0;
         long total = 0;
-        while ((read = await stream.ReadAsync(buffer)) > 0)
+        while ((read = await stream.ReadAsync(buffer, cts.Token)) > 0)
         {
-            await fs.WriteAsync(buffer.AsMemory(0, read));
+            await fs.WriteAsync(buffer.AsMemory(0, read), cts.Token);
+            if (hasher != null) hasher.AppendData(buffer.AsSpan(0, read));
             total += read;
+
+            // Лимит размера: не больше 512 МБ
+            if (total > MaxDownloadBytes)
+            {
+                await fs.DisposeAsync();
+                try { File.Delete(destPath); } catch { }
+                throw new Exception($"Файл слишком большой (>{MaxDownloadBytes / 1024 / 1024} МБ): {Path.GetFileName(destPath)}");
+            }
+
             progress?.Report(new DownloadProgress
             {
                 FileName = Path.GetFileName(destPath),
@@ -609,6 +640,29 @@ public class ModService
             try { File.Delete(destPath); } catch { }
             throw new Exception($"Скачанный файл пуст: {Path.GetFileName(destPath)}");
         }
+
+        // Проверка SHA256 хэша
+        if (expectedSha256 != null && hasher != null)
+        {
+            var actual = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
+            if (actual != expectedSha256.ToLowerInvariant())
+            {
+                await fs.DisposeAsync();
+                try { File.Delete(destPath); } catch { }
+                throw new Exception($"Хэш SHA256 не совпадает: ожидался {expectedSha256}, получен {actual}");
+            }
+        }
+    }
+
+    private static bool VerifySha256(string filePath, string expected)
+    {
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            var hash = SHA256.HashData(stream);
+            return Convert.ToHexString(hash).ToLowerInvariant() == expected.ToLowerInvariant();
+        }
+        catch { return false; }
     }
 
     // ─── CurseForge (via CFWidget, no API key) ───
@@ -1111,5 +1165,10 @@ public class ModService
             });
         }
         catch { }
+    }
+
+    public void Dispose()
+    {
+        _http.Dispose();
     }
 }

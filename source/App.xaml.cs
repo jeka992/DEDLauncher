@@ -137,6 +137,22 @@ public partial class App : Application
             if (answer != MessageBoxResult.Yes)
                 return;
 
+            // Проверка цифровой подписи новой версии перед установкой
+            var sigPath = Path.Combine(currentDir, "DEDLauncher.exe.sig");
+            if (File.Exists(sigPath))
+            {
+                var exeBytes = File.ReadAllBytes(Environment.ProcessPath!);
+                var sigContent = File.ReadAllText(sigPath).Trim();
+                if (!UpdateSigning.Verify(exeBytes, sigContent))
+                {
+                    MessageBox.Show(
+                        "Цифровая подпись новой версии недействительна. Обновление отменено.\n\n" +
+                        "Скачайте лаунчер только из официального Telegram-канала или Discord.",
+                        "Ошибка проверки подписи", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+
             // Копия-обновщик перенесёт файлы и запустит установленную версию
             var updaterPath = Path.Combine(Path.GetTempPath(), "DEDUpdater.exe");
             File.Copy(Environment.ProcessPath!, updaterPath, true);
@@ -148,7 +164,7 @@ public partial class App : Application
             });
             Shutdown();
         }
-        catch { }
+        catch { Logger.Error("CheckInstallUpdate", new Exception("Failed to check install update")); }
     }
 
     private static void WriteInstallMarker(string markerPath, string dir)
@@ -157,7 +173,7 @@ public partial class App : Application
         {
             File.WriteAllText(markerPath, JsonSerializer.Serialize(new { path = dir }));
         }
-        catch { }
+        catch (Exception ex) { Logger.Error("WriteInstallMarker", ex); }
     }
 
     /// <summary>

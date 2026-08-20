@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using DedLauncher.Helpers;
 
 namespace DedLauncher.Services;
 
@@ -56,7 +57,7 @@ public static class UpdateService
                 var info = ParseContent(content);
                 if (info != null) return info;
             }
-            catch { }
+            catch (Exception ex) { Logger.Error($"UpdateService.CheckTg({channel}) via {tpl}", ex); }
         }
         return null;
     }

@@ -28,12 +28,15 @@ public class DiscordAuthService
 
     public async Task<DiscordUser?> LoginAsync(CancellationToken ct = default)
     {
-        const int port = 18000;
+        var port = Random.Shared.Next(15000, 18000);
         var redirectUri = $"http://localhost:{port}/callback";
 
         // PKCE: случайный code_verifier + его SHA256-хэш как challenge
         var codeVerifier = GenerateCodeVerifier();
         var codeChallenge = Base64UrlEncode(SHA256.HashData(Encoding.ASCII.GetBytes(codeVerifier)));
+
+        // State: защита от CSRF — проверяем, что callback пришёл от нашего запроса
+        var state = GenerateCodeVerifier();
 
         using var listener = new HttpListener();
         listener.Prefixes.Add($"http://localhost:{port}/");
@@ -46,7 +49,8 @@ public class DiscordAuthService
                       $"&scope=identify" +
                       $"&prompt=consent" +
                       $"&code_challenge={codeChallenge}" +
-                      $"&code_challenge_method=S256";
+                      $"&code_challenge_method=S256" +
+                      $"&state={state}";
 
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(authUrl) { UseShellExecute = true }); }
         catch { listener.Stop(); return null; }
@@ -65,6 +69,13 @@ public class DiscordAuthService
 
         var ctx = gotContext.Result;
         var query = ctx.Request.QueryString;
+        var returnedState = query["state"];
+        if (returnedState != state)
+        {
+            // CSRF-атака или поддельный callback — отклоняем
+            listener.Stop();
+            return null;
+        }
         code = query["code"];
         var error = query["error"];
 

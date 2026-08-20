@@ -263,7 +263,9 @@ public class MainViewModel : BaseViewModel
         {
             if (File.Exists(DiscordProfilePath))
             {
-                var p = JsonSerializer.Deserialize<DiscordAuthService.DiscordUser>(File.ReadAllText(DiscordProfilePath));
+                var raw = File.ReadAllText(DiscordProfilePath);
+                var decrypted = TokenProtection.Unprotect(raw);
+                var p = JsonSerializer.Deserialize<DiscordAuthService.DiscordUser>(decrypted);
                 if (p != null) DiscordProfile = p;
             }
         }
@@ -275,7 +277,8 @@ public class MainViewModel : BaseViewModel
         try
         {
             if (_discordProfile == null) { if (File.Exists(DiscordProfilePath)) File.Delete(DiscordProfilePath); return; }
-            File.WriteAllText(DiscordProfilePath, JsonSerializer.Serialize(_discordProfile, new JsonSerializerOptions { WriteIndented = true }));
+            var json = JsonSerializer.Serialize(_discordProfile, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(DiscordProfilePath, TokenProtection.Protect(json));
         }
         catch { }
     }
@@ -495,7 +498,7 @@ public class MainViewModel : BaseViewModel
             if (File.Exists(FriendCodePath))
             {
                 var c = File.ReadAllText(FriendCodePath).Trim();
-                if (c.Length >= 6) return c;
+                if (c.Length >= 8) return c;
             }
         }
         catch { }
@@ -509,7 +512,7 @@ public class MainViewModel : BaseViewModel
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         var sb = new System.Text.StringBuilder();
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 8; i++)
             sb.Append(chars[Random.Shared.Next(chars.Length)]);
         return sb.ToString();
     }
@@ -957,12 +960,11 @@ public class MainViewModel : BaseViewModel
     {
         var name = PromptText("Название группы", "");
         if (string.IsNullOrWhiteSpace(name)) return;
-        var code = GenerateFriendCode();
+        StartFriends();
+        var code = await _friends!.CreateGroupAsync();
         var group = new GroupChat { Code = code, Name = name.Trim() };
         Groups.Add(group);
         SaveGroups();
-        StartFriends();
-        await _friends!.JoinGroupAsync(code);
         ShowToast($"Группа создана. Код: {code}");
     }
 
@@ -2656,6 +2658,101 @@ public class MainViewModel : BaseViewModel
         Status = server != null
             ? $"Подключение к {server.AddressLabel}..."
             : $"Запуск Minecraft {CurrentProfile.DisplayVersion}...";
+
+        // Проверяем Java перед запуском
+        var requiredVersion = JavaService.RequiredJavaVersion(CurrentProfile.VersionId);
+        var javaPath = CurrentProfile.JavaPath;
+        if (!string.IsNullOrEmpty(javaPath))
+        {
+            var fi = new FileInfo(javaPath);
+            if (!fi.Exists) javaPath = null;
+        }
+
+        // Ищем подходящую Java
+        JavaInfo? suitableJava = null;
+        var installed = await _java.FindJavaInstallationsAsync();
+        if (!string.IsNullOrEmpty(javaPath))
+            suitableJava = installed.FirstOrDefault(j => j.Path == javaPath && j.MajorVersion >= requiredVersion);
+        suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion >= requiredVersion);
+
+        if (suitableJava == null)
+        {
+            IsLaunching = false;
+            var answer = MessageBox.Show(
+                $"Для Minecraft {CurrentProfile.VersionId} требуется Java {requiredVersion}.\n\n" +
+                "На вашем ПК не найдена подходящая Java.\n\n" +
+                "Установить Eclipse Temurin JDK (бесплатно, автоматически)?",
+                "Java не найдена", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (answer == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    Status = $"Установка Java {requiredVersion}...";
+                    IsBusy = true;
+                    var newJava = await _java.InstallJavaAsync(requiredVersion, new Progress<DownloadProgress>(p =>
+                    {
+                        DlFile = p.FileName ?? "";
+                        DlProgress = p.TotalBytes > 0 ? (int)(p.DownloadedBytes * 100 / p.TotalBytes) : 0;
+                    }));
+                    if (newJava != null)
+                    {
+                        CurrentProfile.JavaPath = newJava;
+                        SaveProfile(CurrentProfile);
+                        ShowToast($"Java {requiredVersion} установлена ✓");
+                        IsBusy = false;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Не удалось установить Java. Проверьте подключение к интернету.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        IsBusy = false; IsGameRunning = false;
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка установки Java: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Logger.Error("InstallJava", ex);
+                    IsBusy = false; IsGameRunning = false;
+                    return;
+                }
+            }
+            else
+            {
+                Status = "Установка Java отменена";
+                IsGameRunning = false;
+                return;
+            }
+        }
+        else
+        {
+            // Если Java выбрана в профиле, но устарела — предупредим
+            if (!string.IsNullOrEmpty(javaPath) && suitableJava.MajorVersion < requiredVersion)
+            {
+                var answer = MessageBox.Show(
+                    $"Выбранная Java ({suitableJava.MajorVersion}) устарела для Minecraft {CurrentProfile.VersionId}.\n" +
+                    $"Требуется Java {requiredVersion}.\n\n" +
+                    "Установить свежую версию?",
+                    "Java устарела", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (answer == MessageBoxResult.Yes)
+                {
+                    Status = $"Установка Java {requiredVersion}...";
+                    IsBusy = true;
+                    var newJava = await _java.InstallJavaAsync(requiredVersion, new Progress<DownloadProgress>(p =>
+                    {
+                        DlFile = p.FileName ?? "";
+                        DlProgress = p.TotalBytes > 0 ? (int)(p.DownloadedBytes * 100 / p.TotalBytes) : 0;
+                    }));
+                    if (newJava != null)
+                    {
+                        CurrentProfile.JavaPath = newJava;
+                        SaveProfile(CurrentProfile);
+                        ShowToast($"Java {requiredVersion} установлена ✓");
+                        IsBusy = false;
+                    }
+                }
+            }
+        }
 
         try
         {

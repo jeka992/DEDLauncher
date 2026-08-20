@@ -31,6 +31,9 @@ public class FriendsService : IDisposable
     private readonly Dictionary<string, string> _friendSign = new();     // code -> signPub
     private readonly Dictionary<string, string> _friendAgree = new();    // code -> agreePub
     private readonly HashSet<string> _groupCodes = new();
+    private readonly Dictionary<string, byte[]> _groupKeys = new(); // groupCode -> random 32-byte key
+    private static readonly string GroupKeysPath = Path.Combine(MinecraftPathHelper.BaseDir, "groupkeys.json");
+    private int _reconnectAttempt;
     private bool _started;
 
     private ECDsa _mySign = null!;
@@ -63,12 +66,15 @@ public class FriendsService : IDisposable
         _client.ApplicationMessageReceivedAsync += OnMessageAsync;
         _client.ConnectedAsync += async e =>
         {
+            _reconnectAttempt = 0;
             await ResubscribeAllAsync();
             Connected?.Invoke();
         };
         _client.DisconnectedAsync += async e =>
         {
-            await Task.Delay(3000);
+            _reconnectAttempt++;
+            var delay = Math.Min(3000 * (int)Math.Pow(2, _reconnectAttempt), 60000);
+            await Task.Delay(delay);
             await ConnectAsync(brokerHost, port);
         };
         BrokerHost = brokerHost;
@@ -82,6 +88,7 @@ public class FriendsService : IDisposable
     {
         if (_started) return;
         _started = true;
+        LoadGroupKeys();
         await ConnectAsync(BrokerHost, BrokerPort);
     }
 
@@ -101,7 +108,7 @@ public class FriendsService : IDisposable
                 .Build();
             await _client.ConnectAsync(options, CancellationToken.None);
         }
-        catch { }
+        catch (Exception ex) { Logger.Error("FriendsService.ConnectAsync", ex); }
     }
 
     // ─── Идентичность ───
@@ -126,7 +133,7 @@ public class FriendsService : IDisposable
                 }
             }
         }
-        catch { }
+        catch (Exception ex) { Logger.Error("FriendsService.LoadOrCreateIdentity.load", ex); }
 
         _mySign = CryptoHelper.NewSignKey();
         _myAgree = CryptoHelper.NewAgreeKey();
@@ -140,7 +147,7 @@ public class FriendsService : IDisposable
                 Agree = TokenProtection.Protect(Convert.ToBase64String(_myAgree.ExportPkcs8PrivateKey()))
             }));
         }
-        catch { }
+        catch (Exception ex) { Logger.Error("FriendsService.LoadOrCreateIdentity.save", ex); }
     }
 
     private class IdFile
@@ -377,7 +384,38 @@ public class FriendsService : IDisposable
 
     // ─── Группы ───
 
-    public async Task JoinGroupAsync(string code)
+    /// <summary>Создать группу со случайным ключом. Возвращает код группы.</summary>
+    public async Task<string> CreateGroupAsync()
+    {
+        var code = GenerateGroupCode();
+        var key = CryptoHelper.NewGroupKey();
+        _groupKeys[code] = key;
+        SaveGroupKeys();
+        _groupCodes.Add(code);
+        await SubscribeAsync(GroupTopic(code));
+        await PublishGroupPresenceAsync(code);
+        return code;
+    }
+
+    /// <summary>Присоединиться к группе. Если ключ известен — использует его, иначе хэш кода.</summary>
+    public async Task JoinGroupAsync(string code, byte[]? groupKey = null)
+    {
+        _groupCodes.Add(code);
+        if (groupKey != null)
+            _groupKeys[code] = groupKey;
+        await SubscribeAsync(GroupTopic(code));
+        await PublishGroupPresenceAsync(code);
+    }
+
+    /// <summary>Отправить ключ группы другу через ECDH-защищённый парный канал.</summary>
+    public async Task SendGroupKeyToFriendAsync(string groupCode, string friendCode)
+    {
+        if (!_groupKeys.TryGetValue(groupCode, out var key)) return;
+        await PublishSealedAsync(PairTopic(MyCode, friendCode), friendCode, "gk",
+            JsonSerializer.Serialize(new { group = groupCode, key = Convert.ToBase64String(key) }));
+    }
+
+    public async Task JoinGroupLegacyAsync(string code)
     {
         _groupCodes.Add(code);
         await SubscribeAsync(GroupTopic(code));
@@ -399,6 +437,64 @@ public class FriendsService : IDisposable
         await PublishAsync(GroupTopic(code), envelope);
     }
 
+    private async Task PublishGroupPresenceAsync(string code)
+    {
+        var key = GetGroupKey(code);
+        var (nonce, cipher) = CryptoHelper.Encrypt(key, Encoding.UTF8.GetBytes(
+            JsonSerializer.Serialize(new { name = DisplayName })));
+        var k = Convert.ToBase64String(nonce);
+        var d = Convert.ToBase64String(cipher);
+        var envelope = JsonSerializer.Serialize(new
+        {
+            v = 1,
+            t = "gp",
+            from = MyCode,
+            spk = _mySignPub,
+            k,
+            d,
+            s = SignData($"gp|{MyCode}|{_mySignPub}|{k}|{d}")
+        });
+        await PublishAsync(GroupTopic(code), envelope);
+    }
+
+    private byte[] GetGroupKey(string code)
+    {
+        if (_groupKeys.TryGetValue(code, out var key)) return key;
+        return CryptoHelper.GroupKey(code);
+    }
+
+    private static string GenerateGroupCode()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < 8; i++)
+            sb.Append(chars[Random.Shared.Next(chars.Length)]);
+        return sb.ToString();
+    }
+
+    private void SaveGroupKeys()
+    {
+        try
+        {
+            var dict = _groupKeys.ToDictionary(kv => kv.Key, kv => Convert.ToBase64String(kv.Value));
+            File.WriteAllText(GroupKeysPath, JsonSerializer.Serialize(dict));
+        }
+        catch { }
+    }
+
+    private void LoadGroupKeys()
+    {
+        try
+        {
+            if (!File.Exists(GroupKeysPath)) return;
+            var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(GroupKeysPath));
+            if (dict == null) return;
+            foreach (var kv in dict)
+                _groupKeys[kv.Key] = Convert.FromBase64String(kv.Value);
+        }
+        catch { }
+    }
+
     public void LeaveGroup(string code)
     {
         if (_groupCodes.Remove(code))
@@ -408,7 +504,7 @@ public class FriendsService : IDisposable
     public async Task SendGroupMessageAsync(string code, string text)
     {
         if (!_client.IsConnected) return;
-        var key = CryptoHelper.GroupKey(code);
+        var key = GetGroupKey(code);
         var (nonce, cipher) = CryptoHelper.Encrypt(key, Encoding.UTF8.GetBytes(
             JsonSerializer.Serialize(new
             {
@@ -573,6 +669,15 @@ public class FriendsService : IDisposable
             case "sk_req":
                 SkinRequested?.Invoke(code);
                 break;
+            case "gk":
+                var gkGroup = ir.TryGetProperty("group", out var grp) ? grp.GetString() ?? "" : "";
+                var gkKeyB64 = ir.TryGetProperty("key", out var kk) ? kk.GetString() ?? "" : "";
+                if (!string.IsNullOrEmpty(gkGroup) && !string.IsNullOrEmpty(gkKeyB64))
+                {
+                    _groupKeys[gkGroup] = Convert.FromBase64String(gkKeyB64);
+                    SaveGroupKeys();
+                }
+                break;
         }
     }
 
@@ -585,7 +690,7 @@ public class FriendsService : IDisposable
         if (string.IsNullOrEmpty(spk) || string.IsNullOrEmpty(k) || string.IsNullOrEmpty(d) || string.IsNullOrEmpty(sig)) return;
         if (!CryptoHelper.Verify(spk, $"{type}|{from}|{spk}|{k}|{d}", sig)) return;
 
-        var key = CryptoHelper.GroupKey(groupCode);
+        var key = GetGroupKey(groupCode);
         string inner;
         try
         {

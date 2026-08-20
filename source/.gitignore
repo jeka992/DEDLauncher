@@ -1,0 +1,16 @@
+# Build
+bin/
+obj/
+*.zip
+
+# IDE
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Temp
+[Dd]ebug/
+[Rr]elease/
+*.log
