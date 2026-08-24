@@ -876,26 +876,63 @@ public class ModService : IDisposable
         Directory.CreateDirectory(targetFolder);
         var destPath = Path.Combine(targetFolder, cfFile.FileName);
 
-        progress?.Report(new DownloadProgress { FileName = cfFile.FileName, TotalBytes = cfFile.FileLength });
-        var response = await _http.GetAsync(cfFile.DownloadUrl, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
+        // Список URL для скачивания (как в XMCL): сначала официальный API-даунлоад,
+        // затем прямые CDN-ссылки ForgeCDN (работают без API-ключа, быстрее и не режутся).
+        var urls = new List<string>();
+        if (!string.IsNullOrEmpty(cfFile.DownloadUrl)) urls.Add(cfFile.DownloadUrl);
+        urls.AddRange(GuessCurseForgeCdnUrls(cfFile.Id, cfFile.FileName));
 
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var fs = File.Create(destPath);
-        var buffer = new byte[8192];
-        var read = 0;
-        long total = 0;
-        while ((read = await stream.ReadAsync(buffer)) > 0)
+        progress?.Report(new DownloadProgress { FileName = cfFile.FileName, TotalBytes = cfFile.FileLength });
+
+        Exception? lastError = null;
+        foreach (var url in urls)
         {
-            await fs.WriteAsync(buffer.AsMemory(0, read));
-            total += read;
-            progress?.Report(new DownloadProgress
+            try
             {
-                FileName = cfFile.FileName,
-                DownloadedBytes = total,
-                TotalBytes = cfFile.FileLength
-            });
+                var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+
+                await using var stream = await response.Content.ReadAsStreamAsync();
+                await using var fs = File.Create(destPath);
+                var buffer = new byte[8192];
+                var read = 0;
+                long total = 0;
+                while ((read = await stream.ReadAsync(buffer)) > 0)
+                {
+                    await fs.WriteAsync(buffer.AsMemory(0, read));
+                    total += read;
+                    progress?.Report(new DownloadProgress
+                    {
+                        FileName = cfFile.FileName,
+                        DownloadedBytes = total,
+                        TotalBytes = cfFile.FileLength
+                    });
+                }
+                await fs.DisposeAsync();
+
+                // Файл должен быть непустым
+                if (new FileInfo(destPath).Length > 0) return;
+
+                try { File.Delete(destPath); } catch { }
+            }
+            catch (Exception ex) { lastError = ex; Logger.Log($"CurseForge download failed via {url}: {ex.Message}"); }
         }
+
+        if (lastError != null) throw lastError;
+    }
+
+    /// <summary>
+    /// Прямые CDN-ссылки CurseForge (как в XMCL): fileId "12345678" → /files/1234/5678/имя.
+    /// Работают без API-ключа.
+    /// </summary>
+    private static IEnumerable<string> GuessCurseForgeCdnUrls(long fileId, string fileName)
+    {
+        var id = fileId.ToString();
+        if (id.Length <= 4) yield break;
+        var prefix = id[..^4];
+        var suffix = id[^4..];
+        yield return $"https://edge.forgecdn.net/files/{prefix}/{suffix}/{Uri.EscapeDataString(fileName)}";
+        yield return $"https://mediafiles.forgecdn.net/files/{prefix}/{suffix}/{Uri.EscapeDataString(fileName)}";
     }
 
     // ─── OptiFine ───
