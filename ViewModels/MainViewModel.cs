@@ -4392,6 +4392,8 @@ public class MainViewModel : BaseViewModel
         }
 
         IsBusy = true; Status = $"Установка {EditModLoader}...";
+        _installCts?.Cancel();
+        _installCts = new CancellationTokenSource();
         try
         {
             var progress = new Progress<DownloadProgress>(p =>
@@ -4471,7 +4473,16 @@ public class MainViewModel : BaseViewModel
             Status = $"{EditModLoader} {loaderVersion} установлен{sodiumNote}";
             if (EditModLoader == "Fabric" && sodiumNote.Contains("+ Sodium"))
                 ShowToast("Fabric + Sodium установлены ✓");
-        }        catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
+        }
+        catch (OperationCanceledException)
+        {
+            Status = "Установка отменена";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("InstallModLoader", ex);
+            Status = $"Ошибка: {ex.Message}";
+        }
         finally { IsBusy = false; DlFile = ""; }
     }
 

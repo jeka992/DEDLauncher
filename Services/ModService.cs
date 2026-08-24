@@ -1124,7 +1124,8 @@ public class ModService : IDisposable
     {
         try
         {
-            var json = await _http.GetStringAsync($"{FabricMetaUrl}/loader/{mcVersion}");
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            var json = await _http.GetStringAsync($"{FabricMetaUrl}/loader/{mcVersion}", cts.Token);
             var loaders = JsonSerializer.Deserialize<List<FabricLoaderMcEntry>>(json);
             return loaders?.FirstOrDefault(l => l.Loader.Stable)?.Loader.Version ?? loaders?.FirstOrDefault()?.Loader.Version;
         }
@@ -1222,7 +1223,11 @@ public class ModService : IDisposable
         IProgress<DownloadProgress>? progress = null)
     {
         var fabricUrl = $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{loaderVersion}/profile/json";
-        var json = await _http.GetStringAsync(fabricUrl);
+        string json;
+        using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+        {
+            json = await _http.GetStringAsync(fabricUrl, cts.Token);
+        }
 
         // Берём реальный ID версии из JSON (например fabric-loader-0.16.9-1.21.1)
         var versionId = "fabric-" + mcVersion;
@@ -1279,11 +1284,12 @@ public class ModService : IDisposable
                 if (!File.Exists(destPath) || new FileInfo(destPath).Length == 0)
                 {
                     progress?.Report(new DownloadProgress { FileName = $"Fabric: {Path.GetFileName(libPath)}", TotalBytes = 1 });
-                    var response = await _http.GetAsync(fullUrl);
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                    var response = await _http.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     response.EnsureSuccessStatusCode();
-                    await using var s = await response.Content.ReadAsStreamAsync();
+                    await using var s = await response.Content.ReadAsStreamAsync(cts.Token);
                     await using var f = File.Create(destPath);
-                    await s.CopyToAsync(f);
+                    await s.CopyToAsync(f, cts.Token);
                 }
             }
         }
