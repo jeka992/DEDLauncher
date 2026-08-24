@@ -34,6 +34,7 @@ public class MainViewModel : BaseViewModel
     private MSession? _session;
     private VersionMetadataCollection? _allVersions;
     private Process? _gameProcess;
+    private CancellationTokenSource? _installCts;
 
     public MainViewModel()
     {
@@ -170,6 +171,19 @@ public class MainViewModel : BaseViewModel
     // ─── Discord ───
     /// <summary>Игра отвязана от лаунчера (лаунчер закрылся, игра продолжает работать).</summary>
     public bool GameDetached { get; set; }
+
+    /// <summary>Открывает страницу последнего релиза DED Launcher на GitHub для скачивания.</summary>
+    public void DownloadLatestRelease()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("https://github.com/jeka992/DEDLauncher/releases/latest")
+            {
+                UseShellExecute = true
+            });
+        }
+        catch { }
+    }
     private bool _autoLogin = true;
     public bool AutoLogin { get => _autoLogin; set => SetProperty(ref _autoLogin, value); }
 
@@ -514,17 +528,10 @@ public class MainViewModel : BaseViewModel
     private void LoadFriends()
     {
         Friends.Clear();
-        try
-        {
-            if (File.Exists(FriendsFilePath))
-            {
-                var list = JsonSerializer.Deserialize<List<FriendEntry>>(File.ReadAllText(FriendsFilePath));
-                if (list != null)
-                    foreach (var f in list)
-                        Friends.Add(f);
-            }
-        }
-        catch { }
+        var list = AtomicFile.ReadJsonOrDefault<List<FriendEntry>>(FriendsFilePath);
+        if (list != null)
+            foreach (var f in list)
+                Friends.Add(f);
         OnPropertyChanged(nameof(HasFriends));
         RebuildFriendsView();
     }
@@ -533,9 +540,10 @@ public class MainViewModel : BaseViewModel
     {
         try
         {
-            File.WriteAllText(FriendsFilePath, JsonSerializer.Serialize(Friends.ToList(), new JsonSerializerOptions { WriteIndented = true }));
+            AtomicFile.WriteAllTextWithBackup(FriendsFilePath,
+                JsonSerializer.Serialize(Friends.ToList(), new JsonSerializerOptions { WriteIndented = true }));
         }
-        catch { }
+        catch (Exception ex) { Logger.Error("SaveFriends", ex); }
         OnPropertyChanged(nameof(HasFriends));
         RebuildFriendsView();
     }
@@ -557,26 +565,20 @@ public class MainViewModel : BaseViewModel
     private void LoadGroups()
     {
         Groups.Clear();
-        try
-        {
-            if (File.Exists(GroupsFilePath))
-            {
-                var list = JsonSerializer.Deserialize<List<GroupChat>>(File.ReadAllText(GroupsFilePath));
-                if (list != null)
-                    foreach (var g in list)
-                        Groups.Add(g);
-            }
-        }
-        catch { }
+        var list = AtomicFile.ReadJsonOrDefault<List<GroupChat>>(GroupsFilePath);
+        if (list != null)
+            foreach (var g in list)
+                Groups.Add(g);
     }
 
     private void SaveGroups()
     {
         try
         {
-            File.WriteAllText(GroupsFilePath, JsonSerializer.Serialize(Groups.ToList(), new JsonSerializerOptions { WriteIndented = true }));
+            AtomicFile.WriteAllTextWithBackup(GroupsFilePath,
+                JsonSerializer.Serialize(Groups.ToList(), new JsonSerializerOptions { WriteIndented = true }));
         }
-        catch { }
+        catch (Exception ex) { Logger.Error("SaveGroups", ex); }
     }
 
     private void StartFriends()
@@ -1204,6 +1206,26 @@ public class MainViewModel : BaseViewModel
         }
     }
 
+    // ─── Подвкладки «Главной»: 0=Игра(дашборд), 1=Консоль, 2=Фото ───
+    private int _homeSubTab;
+    public int HomeSubTab
+    {
+        get => _homeSubTab;
+        set
+        {
+            if (SetProperty(ref _homeSubTab, value))
+            {
+                OnPropertyChanged(nameof(IsHomeGame));
+                OnPropertyChanged(nameof(IsHomeConsole));
+                OnPropertyChanged(nameof(IsHomeScreenshots));
+                if (value == 2) LoadScreenshots();
+            }
+        }
+    }
+    public bool IsHomeGame => _homeSubTab == 0;
+    public bool IsHomeConsole => _homeSubTab == 1;
+    public bool IsHomeScreenshots => _homeSubTab == 2;
+
     // ─── Versions ───
     public ObservableCollection<string> VersionIds { get; } = new();
     public ObservableCollection<string> InstalledVersionIds { get; } = new();
@@ -1755,6 +1777,9 @@ public class MainViewModel : BaseViewModel
     /// </summary>
     private async void FinishDownload()
     {
+        // Если запуск/установка была остановлена — не показываем «Готово»
+        if (_installCts is { IsCancellationRequested: true }) return;
+
         DlProgress = 100;
         DlFile = "Готово ✓";
         await Task.Delay(900);
@@ -1784,6 +1809,8 @@ public class MainViewModel : BaseViewModel
     public ICommand RefreshVersionsCmd { get; private set; } = null!;
     public ICommand DownloadVersionCmd { get; private set; } = null!;
     public ICommand OpenModsFolderCmd { get; private set; } = null!;
+    public ICommand OpenScreenshotsFolderCmd { get; private set; } = null!;
+    public ICommand DownloadReleaseCmd { get; private set; } = null!;
 
     private void InitCommands()
     {
@@ -1819,6 +1846,8 @@ public class MainViewModel : BaseViewModel
         RefreshVersionsCmd = new RelayCommand(async _ => await RefreshVersionsAsync());
         DownloadVersionCmd = new RelayCommand(async _ => await DownloadVersionAsync());
         OpenModsFolderCmd = new RelayCommand(_ => OpenModsFolder());
+        OpenScreenshotsFolderCmd = new RelayCommand(_ => OpenScreenshotsFolder());
+        DownloadReleaseCmd = new RelayCommand(_ => DownloadLatestRelease());
     }
 
     private static string ServersFilePath => Path.Combine(MinecraftPathHelper.BaseDir, "servers.json");
@@ -2141,6 +2170,15 @@ public class MainViewModel : BaseViewModel
 
             InitStatus = "Проверка соединения...";
             var parameters = MinecraftLauncherParameters.CreateDefault(_minecraftPath, _http);
+
+            // VersionLoader V2: при недоступности сети возвращает локальный кэш манифеста,
+            // а не падает (аналог stale-while-revalidate в XMCL)
+            parameters.VersionLoader = new CmlLib.Core.VersionLoader.MojangJsonVersionLoaderV2(
+                _minecraftPath, _http)
+            {
+                UseLocalManifestWhenError = true
+            };
+
             _launcher = new MinecraftLauncher(parameters);
             _allVersions = await _launcher.GetAllVersionsAsync();
 
@@ -2597,9 +2635,11 @@ public class MainViewModel : BaseViewModel
     {
         if (_launcher == null || string.IsNullOrEmpty(SelectedVersionId) || _session == null) return;
         IsBusy = true; DlProgress = 0; Status = $"Скачивание {SelectedVersionId}...";
+        _installCts?.Cancel();
+        _installCts = new CancellationTokenSource();
         try
         {
-            var cts = new CancellationTokenSource();
+            var cts = _installCts;
             var fileProgress = new Progress<CmlLib.Core.Installers.InstallerProgressChangedEventArgs>(p =>
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -2616,16 +2656,38 @@ public class MainViewModel : BaseViewModel
                 MinimumRamMb = CurrentProfile?.MinRamMb ?? 2048
             };
 
-            await Task.Run(async () =>
+            var installTask = Task.Run(async () =>
             {
                 await _launcher.InstallAndBuildProcessAsync(SelectedVersionId, launchOption,
                     fileProgress, byteProgress, cts.Token);
             });
 
+            // Прерываемся по отмене, не дожидаясь зависшей сетевой операции CmlLib
+            var cancelTask = Task.Delay(Timeout.Infinite, cts.Token);
+            var done = await Task.WhenAny(installTask, cancelTask);
+
+            if (done == cancelTask)
+            {
+                Status = "Установка отменена";
+                _ = installTask.ContinueWith(t =>
+                {
+                    try { t.GetAwaiter().GetResult(); } catch { }
+                }, TaskScheduler.Default);
+                return;
+            }
+            await installTask;
+
+            if (cts.IsCancellationRequested)
+            {
+                Status = "Установка отменена";
+                return;
+            }
+
             Application.Current.Dispatcher.Invoke(() => { DlProgress = 100; Status = $"{SelectedVersionId} установлена!"; });
             ShowToast($"{SelectedVersionId} установлена ✓");
             await RefreshInstalledVersions();
         }
+        catch (OperationCanceledException) { Status = "Установка отменена"; }
         catch (Exception ex) { Status = $"Ошибка: {ex.Message}"; }
         finally { FinishDownload(); }
     }
@@ -2649,18 +2711,42 @@ public class MainViewModel : BaseViewModel
         // Проверяем Java перед запуском
         var requiredVersion = JavaService.RequiredJavaVersion(CurrentProfile.VersionId);
         var javaPath = CurrentProfile.JavaPath;
+        var javaPathExists = false;
         if (!string.IsNullOrEmpty(javaPath))
         {
-            var fi = new FileInfo(javaPath);
-            if (!fi.Exists) javaPath = null;
+            javaPathExists = new FileInfo(javaPath).Exists;
+            if (!javaPathExists) javaPath = null;
         }
 
-        // Ищем подходящую Java
         JavaInfo? suitableJava = null;
-        var installed = await _java.FindJavaInstallationsAsync();
-        if (!string.IsNullOrEmpty(javaPath))
-            suitableJava = installed.FirstOrDefault(j => j.Path == javaPath && j.MajorVersion >= requiredVersion);
-        suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion >= requiredVersion);
+
+        // Если в профиле явно указан путь к Java и файл существует — используем его
+        // напрямую, не переспрашивая (даже если сканирование не нашло его).
+        if (javaPathExists && !string.IsNullOrEmpty(javaPath))
+        {
+            var profileJava = await Task.Run(() => _java.ProbeJava(javaPath!));
+            if (profileJava != null && profileJava.MajorVersion >= requiredVersion)
+            {
+                suitableJava = profileJava;
+            }
+            else if (profileJava != null && profileJava.MajorVersion < requiredVersion)
+            {
+                // Путь есть, но версия старая — предупредим ниже
+            }
+        }
+
+        // Если путь из профиля не подошёл — ищем по всей системе: предпочитаем ТОЧНУЮ
+        // требуемую версию (Minecraft жёстко привязан к конкретной мажорной версии Java —
+        // 1.21 требует именно 21, не 25), и только если точной нет — берём более новую.
+        if (suitableJava == null)
+        {
+            var installed = await _java.FindJavaInstallationsAsync();
+            if (!string.IsNullOrEmpty(javaPath))
+                suitableJava = installed.FirstOrDefault(j => j.Path == javaPath && j.MajorVersion == requiredVersion);
+            suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion == requiredVersion);
+            suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion > requiredVersion);
+            suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion >= requiredVersion);
+        }
 
         if (suitableJava == null)
         {
@@ -2787,7 +2873,9 @@ public class MainViewModel : BaseViewModel
                 ServerPort = server?.Port ?? 25565
             };
 
-            var cts = new CancellationTokenSource();
+            _installCts?.Cancel();
+            _installCts = new CancellationTokenSource();
+            var cts = _installCts;
             var launchDoneTasks = 0;
             var launchTotalTasks = 0;
             var launchMaxPct = 0.0;
@@ -2816,24 +2904,93 @@ public class MainViewModel : BaseViewModel
             DlProgress = 1;
             DlFile = "Подготовка...";
 
-            _gameProcess = await Task.Run(async () =>
+            // Ожидаем завершения установки/запуска, но прерываемся по отмене:
+            // CmlLib может не реагировать на токен мгновенно (сетевые read), поэтому
+            // при нажатии «Остановить» не ждём его бесконечно.
+            var installTask = Task.Run(async () =>
                 await _launcher.InstallAndBuildProcessAsync(versionId, launchOption,
                     fileProgress, byteProgress, cts.Token));
+
+            var cancelTask = Task.Delay(Timeout.Infinite, cts.Token);
+            var completed = await Task.WhenAny(installTask, cancelTask);
+
+            if (completed == cancelTask)
+            {
+                Status = "Запуск остановлен";
+                IsGameRunning = false;
+                IsLaunching = false;
+                IsBusy = false;
+                DlProgress = 0;
+                DlFile = "";
+                _ = installTask.ContinueWith(t =>
+                {
+                    // Дожидаемся фактического завершения фоновой задачи в фоне
+                    try { t.GetAwaiter().GetResult(); } catch { }
+                }, TaskScheduler.Default);
+                return;
+            }
+
+            _gameProcess = await installTask;
+
+            if (cts.IsCancellationRequested)
+            {
+                Status = "Запуск отменён";
+                IsGameRunning = false;
+                IsLaunching = false;
+                IsBusy = false;
+                return;
+            }
 
             // Включаем перенаправление вывода (если CmlLib его не включил)
             _gameProcess.StartInfo.RedirectStandardOutput = true;
             _gameProcess.StartInfo.RedirectStandardError = true;
             _gameProcess.StartInfo.UseShellExecute = false;
+            // Окно консоли Java НЕ показываем — иначе при запуске игры
+            // появляется чёрное cmd-окно поверх лаунчера
+            _gameProcess.StartInfo.CreateNoWindow = true;
+            _gameProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+
+            // Evidence-лог запуска (как в XMCL): пишем игреский вывод в файл на диск
+            var gameLogPath = Path.Combine(MinecraftPathHelper.BaseDir, "logs",
+                $"launch-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+            try { Directory.CreateDirectory(Path.GetDirectoryName(gameLogPath)!); } catch { }
+            var gameLogWriter = File.AppendText(gameLogPath);
+            var crashDetected = false;
 
             _gameProcess.OutputDataReceived += (s, e) =>
-            { if (e.Data != null) Application.Current.Dispatcher.Invoke(() => { ConsoleLines.Add(e.Data); if (ConsoleLines.Count > 500) ConsoleLines.RemoveAt(0); }); };
+            {
+                if (e.Data != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() => { ConsoleLines.Add(e.Data); if (ConsoleLines.Count > 500) ConsoleLines.RemoveAt(0); });
+                    try { gameLogWriter.WriteLine(e.Data); } catch { }
+                    if (e.Data.Contains("---- Minecraft Crash Report ----", StringComparison.OrdinalIgnoreCase))
+                        crashDetected = true;
+                }
+            };
             _gameProcess.ErrorDataReceived += (s, e) =>
-            { if (e.Data != null) Application.Current.Dispatcher.Invoke(() => { ConsoleLines.Add(e.Data); if (ConsoleLines.Count > 500) ConsoleLines.RemoveAt(0); }); };
+            {
+                if (e.Data != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() => { ConsoleLines.Add(e.Data); if (ConsoleLines.Count > 500) ConsoleLines.RemoveAt(0); });
+                    try { gameLogWriter.WriteLine(e.Data); } catch { }
+                }
+            };
             _gameProcess.EnableRaisingEvents = true;
             _gameProcess.Exited += (s, e) => Application.Current.Dispatcher.Invoke(() =>
             {
                 IsGameRunning = false;
-                Status = "Игра закрыта";
+                try { gameLogWriter.Flush(); gameLogWriter.Dispose(); } catch { }
+
+                if (crashDetected)
+                {
+                    Status = "Игра вылетела (краш) — лог сохранён";
+                    Logger.Log($"Crash detected, log saved: {gameLogPath}");
+                    ShowToast("Minecraft вылетел. Лог сохранён.");
+                }
+                else
+                {
+                    Status = "Игра закрыта";
+                }
                 FinishGameStats();
             });
 
@@ -2852,7 +3009,8 @@ public class MainViewModel : BaseViewModel
 
             _gameStartTime = DateTime.Now;
             _gameStopwatch = Stopwatch.StartNew();
-            _statsTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.Zero };
+            // Обновляем счётчик «сегодня» раз в секунду (TimeSpan.Zero спамил бы UI)
+            _statsTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _statsTimer.Tick += (s, a) => { if (_gameStopwatch != null) { TodayMinutes = _sessionTodayBefore + _gameStopwatch.Elapsed.TotalMinutes; } };
             _statsTimer.Start();
 
@@ -2875,6 +3033,12 @@ public class MainViewModel : BaseViewModel
                     break;
             }
         }
+        catch (OperationCanceledException)
+        {
+            Status = "Запуск отменён";
+            IsGameRunning = false;
+            IsBusy = false;
+        }
         catch (Exception ex)
         {
             Status = $"Ошибка: {ex.Message}";
@@ -2885,8 +3049,37 @@ public class MainViewModel : BaseViewModel
 
     public void StopGame()
     {
+        // Отменяем установку/скачивание, если оно идёт
+        _installCts?.Cancel();
+
+        // Сбрасываем UI немедленно, не дожидаясь исключения отмены из InstallAndBuildProcessAsync
+        // (CmlLib может не реагировать на токен мгновенно — сетевые read не всегда отменяемы).
+        if (_installCts != null)
+        {
+            IsGameRunning = false;
+            IsLaunching = false;
+            IsBusy = false;
+            DlProgress = 0;
+            DlFile = "";
+            Status = "Запуск остановлен";
+        }
+
         if (_gameProcess != null && !_gameProcess.HasExited)
         {
+            // Полное убийство дерева процессов (как в XMCL): taskkill /F /T —
+            // Java может порождать дочерние процессы, которые без этого останутся висеть.
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "taskkill",
+                    Arguments = $"/F /T /PID {_gameProcess.Id}",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+            }
+            catch { }
+
             _gameProcess.Kill();
             _gameProcess = null;
             FinishGameStats();
@@ -2921,6 +3114,36 @@ public class MainViewModel : BaseViewModel
             }
             _statsTimer?.Stop();
             _statsTimer = null;
+            SavePlayStats();
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Сохраняет статистику НЕМЕДЛЕННО (без остановки секундомера).
+    /// Нужно при закрытии лаунчера с запущенной игрой (PostLaunchAction=close):
+    /// лаунчер умирает, а процесс игры живёт — иначе накопленное время теряется.
+    /// </summary>
+    public void SaveStatsNow()
+    {
+        try
+        {
+            if (_gameStopwatch != null)
+            {
+                var minutes = _gameStopwatch.Elapsed.TotalMinutes;
+                if (minutes > 0.05)
+                {
+                    TotalMinutes += minutes;
+                    var startDay = _gameStartTime.Date;
+                    if (_todayKey.Date != startDay)
+                    {
+                        _todayKey = startDay;
+                        TodayMinutes = 0;
+                    }
+                    _sessionTodayBefore += minutes;
+                    TodayMinutes = _sessionTodayBefore;
+                }
+            }
             SavePlayStats();
         }
         catch { }

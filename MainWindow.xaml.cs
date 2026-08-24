@@ -25,6 +25,31 @@ public partial class MainWindow : Window
     {
         ActiveBg = brush;
         _instance?.RefreshActiveButton();
+        _instance?.UpdateAmbientBackground(brush.Color);
+    }
+
+    /// <summary>Обновляет цвет фонового градиента под текущую тему (акцент «дышит» в цвет темы).</summary>
+    public void UpdateAmbientBackground(Color accent)
+    {
+        if (BgAmbientStop == null) return;
+
+        // Останавливаем старую анимацию цвета, чтобы не конфликтовала
+        BgAmbientStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, null);
+
+        // Плавно перекрашиваем фон в цвет темы (полупрозрачный, чтобы не перекрывал контент)
+        BgAmbientStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty,
+            new ColorAnimation(
+                BgAmbientStop.Color,
+                System.Windows.Media.Color.FromArgb(0x1A, accent.R, accent.G, accent.B),
+                TimeSpan.FromMilliseconds(500)));
+
+        // Возобновляем медленную пульсацию в новом цвете
+        BgAmbientStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty,
+            new ColorAnimation(
+                System.Windows.Media.Color.FromArgb(0x1A, accent.R, accent.G, accent.B),
+                System.Windows.Media.Color.FromArgb(0x40, (byte)(accent.R * 0.84), (byte)(accent.G * 0.84), (byte)(accent.B * 0.84)),
+                TimeSpan.FromMilliseconds(3200))
+            { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever });
     }
 
     /// <summary>
@@ -86,22 +111,93 @@ public partial class MainWindow : Window
 
         _navBtns[BtnPlay] = "play";
         _navBtns[BtnMods] = "mods";
-        _navBtns[BtnConsole] = "console";
-        _navBtns[BtnScreenshots] = "screenshots";
         _navBtns[BtnFriends] = "friends";
         _navBtns[BtnSetup] = "setup";
 
         RestoreWindowState();
 
+        // Плавная реакция на растяжение окна: контент мягко перерисовывается
+        // (лёгкий fade), вместо резкого скачка при ресайзе.
+        SizeChanged += OnWindowResize;
+
         Loaded += async (s, e) =>
         {
             await _vm.InitAsync();
             SetActive("home");
+            StartPlayPulse();
+            StartAmbientBackground();
         };
+    }
+
+    private DateTime _lastResize = DateTime.MinValue;
+
+    /// <summary>Мягкая анимация контента при изменении размера окна.</summary>
+    private void OnWindowResize(object sender, SizeChangedEventArgs e)
+    {
+        if (PagesHost == null) return;
+
+        // Троттлинг: не дёргаем анимацию на каждый пиксель ресайза
+        if ((DateTime.UtcNow - _lastResize).TotalMilliseconds < 120) return;
+        _lastResize = DateTime.UtcNow;
+
+        var fade = new DoubleAnimation(0.55, 1, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new QuinticEase { EasingMode = EasingMode.EaseOut }
+        };
+        PagesHost.BeginAnimation(OpacityProperty, fade);
+    }
+
+    /// <summary>Медленная пульсация + дрейф фонового градиента (премиум-атмосфера).</summary>
+    private void StartAmbientBackground()
+    {
+        if (BgAmbientStop == null || BgAmbient == null) return;
+
+        // Пульсация яркости акцента в цвете текущей темы
+        var accent = ActiveBg?.Color ?? System.Windows.Media.Color.FromRgb(0xB3, 0x00, 0x00);
+        BgAmbientStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty,
+            new ColorAnimation(
+                System.Windows.Media.Color.FromArgb(26, accent.R, accent.G, accent.B),
+                System.Windows.Media.Color.FromArgb(64, (byte)(accent.R * 0.84), (byte)(accent.G * 0.84), (byte)(accent.B * 0.84)),
+                TimeSpan.FromMilliseconds(3200))
+            { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever });
+
+        // Медленный дрейф центра градиента (влево-вправо)
+        BgAmbient.BeginAnimation(System.Windows.Media.RadialGradientBrush.CenterProperty,
+            new PointAnimation(
+                new System.Windows.Point(0.35, 0.15),
+                new System.Windows.Point(0.65, 0.3),
+                TimeSpan.FromMilliseconds(14000))
+            { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever });
+    }
+
+    /// <summary>Пульсация свечения большой кнопки «Играть» на главной (премиум).</summary>
+    private void StartPlayPulse()
+    {
+        var btn = BtnPlayBig;
+        if (btn == null) return;
+
+        btn.Effect = new System.Windows.Media.Effects.DropShadowEffect
+        {
+            Color = System.Windows.Media.Color.FromRgb(0xB3, 0x00, 0x00),
+            BlurRadius = 16,
+            ShadowDepth = 0,
+            Opacity = 0.35
+        };
+
+        var pulse = new DoubleAnimation(0.3, 0.7, TimeSpan.FromMilliseconds(1600))
+        {
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+        (btn.Effect as System.Windows.Media.Effects.DropShadowEffect).BeginAnimation(
+            System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, pulse);
     }
 
     private void RestoreWindowState()
     {
+        // Размер и позиция окна всегда сбрасываются к дефолту (1000×720, центр).
+        // Восстанавливаем только ширину боковой панели — это удобно.
         try
         {
             var path = Path.Combine(Helpers.MinecraftPathHelper.BaseDir, "window.json");
@@ -109,32 +205,11 @@ public partial class MainWindow : Window
             {
                 var json = File.ReadAllText(path);
                 var state = JsonSerializer.Deserialize<WinPos>(json);
-                if (state != null && state.W > 0)
-                {
-                    Width = state.W;
-                    Height = state.H;
-                }
-                if (state != null && state.X > -10000)
-                {
-                    Left = state.X;
-                    Top = state.Y;
-                }
                 if (state != null && state.SW >= 72 && state.SW <= 220)
                 {
                     SidebarColumn.Width = new GridLength(state.SW);
                 }
             }
-        }
-        catch { }
-    }
-
-    private void SaveWindowState()
-    {
-        try
-        {
-            var state = new { X = Left, Y = Top, W = Width, H = Height, SW = SidebarColumn.Width.Value };
-            File.WriteAllText(Path.Combine(Helpers.MinecraftPathHelper.BaseDir, "window.json"),
-                JsonSerializer.Serialize(state));
         }
         catch { }
     }
@@ -157,7 +232,7 @@ public partial class MainWindow : Window
 
         switch (tag)
         {
-            case "home": _vm.NavHomeCmd.Execute(null); break;
+            case "home": _vm.NavHomeCmd.Execute(null); HighlightHomeTabs(); break;
             case "play": _vm.NavPlayCmd.Execute(null); break;
             case "mods": _vm.NavModsCmd.Execute(null); HighlightSubTab(); break;
             case "console": _vm.NavConsoleCmd.Execute(null); break;
@@ -165,6 +240,8 @@ public partial class MainWindow : Window
             case "friends": _vm.NavFriendsCmd.Execute(null); break;
             case "setup": _vm.NavSetupCmd.Execute(null); HighlightSettingsSection(); break;
         }
+
+        AnimatePageSwitch();
     }
 
     private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
@@ -184,7 +261,7 @@ public partial class MainWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        Close();
+        CloseAnimated();
     }
 
     private void SwitchToModrinth(object sender, RoutedEventArgs e) { }
@@ -331,6 +408,25 @@ public partial class MainWindow : Window
         _vm.ShowInstalledMods = (sender as Button)?.Tag as string == "installed";
         if (_vm.ShowInstalledMods) _vm.RefreshInstalledMods();
         HighlightViewToggles();
+    }
+
+    /// <summary>Переключение подвкладок «Главной»: 0=Игра, 1=Консоль, 2=Фото.</summary>
+    private void HomeSubTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && int.TryParse(btn.Tag as string, out var tab))
+        {
+            _vm.HomeSubTab = tab;
+            HighlightHomeTabs();
+        }
+    }
+
+    private void HighlightHomeTabs()
+    {
+        var active = (Style)FindResource("BtnRed");
+        var inactive = (Style)FindResource("BtnOutline");
+        BtnHomeGameTab.Style = _vm.HomeSubTab == 0 ? active : inactive;
+        BtnHomeConsoleTab.Style = _vm.HomeSubTab == 1 ? active : inactive;
+        BtnHomeScreensTab.Style = _vm.HomeSubTab == 2 ? active : inactive;
     }
 
     private void RpViewToggle_Click(object sender, RoutedEventArgs e)
@@ -825,15 +921,77 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         if (!_vm.GameDetached) _vm.StopGame();
+        // Сохраняем статистику ВСЕГДА при закрытии лаунчера — даже если игра
+        // осталась работать (PostLaunchAction=close): иначе время сессии теряется.
+        _vm.SaveStatsNow();
         if (_vm.CurrentProfile != null) _vm.SaveProfile(_vm.CurrentProfile);
         _vm.SaveSettings();
-        SaveWindowState();
         base.OnClosed(e);
+    }
+
+    // ═══════════════ ПРЕМИУМ-АНИМАЦИИ ОКНА ═══════════════
+
+    /// <summary>
+    /// Плавное появление окна: мягкий fade. Без ScaleTransform на окне —
+    /// он конфликтует с WindowChrome (ошибка Ownership).
+    /// </summary>
+    protected override void OnContentRendered(EventArgs e)
+    {
+        base.OnContentRendered(e);
+
+        Opacity = 0;
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320))
+        {
+            EasingFunction = new QuinticEase { EasingMode = EasingMode.EaseOut }
+        };
+        BeginAnimation(OpacityProperty, fadeIn);
+    }
+
+    /// <summary>Плавное закрытие окна: fade + сжатие, затем реальное закрытие.</summary>
+    public void CloseAnimated()
+    {
+        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(280))
+        {
+            EasingFunction = new QuinticEase { EasingMode = EasingMode.EaseIn }
+        };
+        fadeOut.Completed += (s, e) => Close();
+        BeginAnimation(OpacityProperty, fadeOut);
+
+        var shrink = new DoubleAnimation(1, 0.94, TimeSpan.FromMilliseconds(280))
+        {
+            EasingFunction = new QuinticEase { EasingMode = EasingMode.EaseIn }
+        };
+        var st = RenderTransform as ScaleTransform ?? new ScaleTransform(1, 1);
+        RenderTransform = st;
+        st.BeginAnimation(ScaleTransform.ScaleXProperty, shrink);
+        st.BeginAnimation(ScaleTransform.ScaleYProperty, shrink);
+    }
+
+    /// <summary>Плавное появление контента вкладок с учётом премиум-длительности.</summary>
+    private void AnimatePageSwitch()
+    {
+        if (PagesHost == null) return;
+        PagesHost.BeginAnimation(OpacityProperty, null);
+
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(400))
+        {
+            EasingFunction = new QuinticEase { EasingMode = EasingMode.EaseOut }
+        };
+        PagesHost.BeginAnimation(OpacityProperty, fade);
+
+        var tt = new TranslateTransform(18, 0);
+        PagesHost.RenderTransform = tt;
+        var slide = new DoubleAnimation(18, 0, TimeSpan.FromMilliseconds(500))
+        {
+            EasingFunction = new QuinticEase { EasingMode = EasingMode.EaseOut }
+        };
+        tt.BeginAnimation(TranslateTransform.YProperty, slide);
     }
 }
 
 internal class WinPos
 {
+    public int V { get; set; }
     public double X { get; set; }
     public double Y { get; set; }
     public double W { get; set; }

@@ -7,8 +7,8 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="DED Launcher"
         Icon="Assets/icon.ico"
-        Width="1100" Height="720"
-        MinWidth="900" MinHeight="600"
+        Width="1000" Height="720"
+        MinWidth="860" MinHeight="560"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="False"
@@ -251,24 +251,6 @@
                                            Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="BtnConsole" Click="Nav_Click" Tag="console" Margin="7,2"
-                                Style="{StaticResource NavBtn}" Width="58" Height="58">
-                            <StackPanel>
-                                <TextBlock Text="☰" FontSize="18" HorizontalAlignment="Center"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"/>
-                                <TextBlock Text="КОНСОЛЬ" FontSize="8" HorizontalAlignment="Center" Margin="0,2,0,0"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"/>
-                            </StackPanel>
-                        </Button>
-                        <Button x:Name="BtnScreenshots" Click="Nav_Click" Tag="screenshots" Margin="7,2"
-                                Style="{StaticResource NavBtn}" Width="58" Height="58">
-                            <StackPanel>
-                                <TextBlock Text="📷" FontSize="16" HorizontalAlignment="Center"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"/>
-                                <TextBlock Text="ФОТО" FontSize="8" HorizontalAlignment="Center" Margin="0,2,0,0"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"/>
-                            </StackPanel>
-                        </Button>
                         <Button x:Name="BtnFriends" Click="Nav_Click" Tag="friends" Margin="7,2"
                                 Style="{StaticResource NavBtn}" Width="58" Height="58">
                             <Grid>
@@ -330,6 +312,17 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
+
+                <!-- Живой фоновый градиент (медленная пульсация акцента) -->
+                <Grid Grid.Row="0" Grid.RowSpan="3" IsHitTestVisible="False">
+                    <Grid.Background>
+                        <RadialGradientBrush x:Name="BgAmbient" Center="0.5,0.2" GradientOrigin="0.5,0.2" RadiusX="0.9" RadiusY="0.9">
+                            <GradientStop x:Name="BgAmbientStop" Color="#1AB30000" Offset="0"/>
+                            <GradientStop Color="#00121212" Offset="0.55"/>
+                            <GradientStop Color="#0A121212" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Grid.Background>
+                </Grid>
 
                 <!-- Header -->
                 <Border Grid.Row="0" Background="{StaticResource BgHeaderBrush}"
@@ -584,6 +577,19 @@
                         <Grid Visibility="{Binding HomeActive, Converter={StaticResource BoolVis}}">
                             <StackPanel>
 
+                                <!-- HOME SUB-TAB: Игра / Консоль / Фото -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <Button x:Name="BtnHomeGameTab" Content="🎮 ИГРА" Click="HomeSubTab_Click" Tag="0"
+                                            Style="{StaticResource BtnRed}" FontSize="11" Padding="14,6" Margin="0,0,6,0"/>
+                                    <Button x:Name="BtnHomeConsoleTab" Content="🖥 КОНСОЛЬ" Click="HomeSubTab_Click" Tag="1"
+                                            Style="{StaticResource BtnOutline}" FontSize="11" Padding="14,6" Margin="0,0,6,0"/>
+                                    <Button x:Name="BtnHomeScreensTab" Content="📷 ФОТО" Click="HomeSubTab_Click" Tag="2"
+                                            Style="{StaticResource BtnOutline}" FontSize="11" Padding="14,6"/>
+                                </StackPanel>
+
+                                <!-- ПОДВКЛАДКА HOME: ИГРА (дашборд) -->
+                                <StackPanel Visibility="{Binding IsHomeGame, Converter={StaticResource BoolVis}}">
+
                                 <!-- Hero -->
                                 <Border Style="{StaticResource Card}" Padding="20" Margin="0,0,0,10"
                                         BorderBrush="{StaticResource BorderLightBrush}">
@@ -625,13 +631,17 @@
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
-                                            <Button Content="▶  ИГРАТЬ" Style="{StaticResource BtnRed}"
+                                            <Button x:Name="BtnPlayBig" Content="▶  ИГРАТЬ" Style="{StaticResource BtnRed}"
                                                     Command="{Binding LaunchCmd}"
                                                     Width="180" Height="50" FontSize="18"/>
                                             <Button Content="⏹  ОСТАНОВИТЬ" Style="{StaticResource BtnOutline}"
                                                     Command="{Binding StopCmd}" Width="180" Height="32" Margin="0,6,0,0"
                                                     FontSize="11"
                                                     Visibility="{Binding IsGameRunning, Converter={StaticResource BoolVis}}"/>
+                                            <Button Content="⬇  СКАЧАТЬ НОВУЮ ВЕРСИЮ" Style="{StaticResource BtnOutline}"
+                                                    Command="{Binding DownloadReleaseCmd}" Width="180" Height="32" Margin="0,6,0,0"
+                                                    FontSize="11"
+                                                    ToolTip="Открыть страницу последнего релиза DED Launcher на GitHub"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -725,6 +735,133 @@
                                         </ScrollViewer>
                                     </StackPanel>
                                 </Border>
+                                </StackPanel> <!-- конец подвкладки ИГРА -->
+
+                                <!-- ПОДВКЛАДКА HOME: КОНСОЛЬ -->
+                                <StackPanel Visibility="{Binding IsHomeConsole, Converter={StaticResource BoolVis}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <TextBlock Text="Логи Консоли" FontSize="20" FontWeight="Black"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button Content="Очистить" Style="{StaticResource BtnOutline}" Margin="0,0,8,0"
+                                                    FontSize="11" Command="{Binding ClearLogsCmd}"/>
+                                            <Button Content="Диагностика" Style="{StaticResource BtnOutline}"
+                                                    FontSize="11" Click="Diagnostics_Click"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Terminal -->
+                                    <Border Background="#09090B" CornerRadius="12"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <!-- Terminal header: three dots + title -->
+                                            <Border Background="{StaticResource BgHoverBrush}" CornerRadius="12,12,0,0"
+                                                    Padding="12,8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                                                <Grid>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse Width="10" Height="10" Fill="#FF5F57" Margin="0,0,6,0"/>
+                                                        <Ellipse Width="10" Height="10" Fill="#FEBC2E" Margin="0,0,6,0"/>
+                                                        <Ellipse Width="10" Height="10" Fill="#28C840"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="ded-launcher-bridge // terminal"
+                                                               FontFamily="Consolas" FontSize="10"
+                                                               Foreground="{StaticResource TextFaintBrush}"
+                                                               HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="Java Standard Out (UTF-8)"
+                                                               FontFamily="Consolas" FontSize="9"
+                                                               Foreground="{StaticResource TextFaintBrush}"
+                                                               HorizontalAlignment="Right"/>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Log area -->
+                                            <Border Padding="12" Height="360">
+                                                <ListBox ItemsSource="{Binding ConsoleLines}" Background="Transparent"
+                                                         BorderThickness="0" VirtualizingStackPanel.IsVirtualizing="True">
+                                                    <ListBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock FontFamily="Consolas" FontSize="10"
+                                                                       Foreground="{StaticResource ConsoleGreenBrush}"
+                                                                       Text="{Binding}" TextWrapping="Wrap"/>
+                                                        </DataTemplate>
+                                                    </ListBox.ItemTemplate>
+                                                </ListBox>
+                                            </Border>
+
+                                            <!-- Command input -->
+                                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+                                                <Grid Margin="12,6">
+                                                    <TextBlock Text="&gt;&gt;" FontFamily="Consolas" FontSize="11"
+                                                               Foreground="{DynamicResource AccentBrush}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding CmdInput, UpdateSourceTrigger=PropertyChanged}"
+                                                             FontFamily="Consolas" FontSize="11" Padding="4,6" Margin="24,0,90,0"
+                                                             Background="#09090B"/>
+                                                    <Button HorizontalAlignment="Right" Content="ОТПРАВИТЬ"
+                                                            Style="{StaticResource BtnRed}" FontSize="10" Padding="12,6"
+                                                            Command="{Binding SendCmdCmd}"/>
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- ПОДВКЛАДКА HOME: ФОТО -->
+                                <StackPanel Visibility="{Binding IsHomeScreenshots, Converter={StaticResource BoolVis}}">
+                                    <Grid Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="Скриншоты" FontSize="20" FontWeight="Black" Margin="0,0,0,2"/>
+                                            <TextBlock Text="Скриншоты, сделанные в Minecraft (F2)."
+                                                       FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+                                        </StackPanel>
+                                        <Button HorizontalAlignment="Right" Content="📂 Открыть папку"
+                                                Style="{StaticResource BtnOutline}" FontSize="11" Padding="12,6"
+                                                VerticalAlignment="Center"
+                                                Click="OpenScreenshotsFolder_Click"/>
+                                    </Grid>
+
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  PreviewMouseWheel="ScreenshotsScroll_PreviewMouseWheel"
+                                                  MaxHeight="{Binding ActualHeight, ElementName=PagesHost, Converter={StaticResource Sub}, ConverterParameter=120}">
+                                        <ItemsControl ItemsSource="{Binding Screenshots}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Columns="4"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:ScreenshotItem}">
+                                                    <Border Style="{StaticResource Card}" Margin="0,0,8,8" Padding="8"
+                                                            Cursor="Hand" MouseLeftButtonUp="Screenshot_Click" Tag="{Binding}">
+                                                        <StackPanel>
+                                                            <Border Background="{StaticResource BgInputBrush}" CornerRadius="6"
+                                                                    Height="110" ClipToBounds="True">
+                                                                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                                                                       RenderOptions.BitmapScalingMode="LowQuality"/>
+                                                            </Border>
+                                                            <Grid Margin="0,6,0,0">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <StackPanel Grid.Column="0">
+                                                                    <TextBlock Text="{Binding FileName}" FontSize="10" Margin="0,0,0,2"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock Text="{Binding TakenAt, StringFormat='dd.MM.yyyy HH:mm'}"
+                                                                               FontSize="9" Foreground="{StaticResource TextFaintBrush}"/>
+                                                                </StackPanel>
+                                                                <Button Grid.Column="1" Content="📋" Style="{StaticResource IconBtn}"
+                                                                        Width="26" Height="26" FontSize="12" Margin="6,0,0,0"
+                                                                        VerticalAlignment="Center"
+                                                                        Click="CopyScreenshot_Click" Tag="{Binding}"
+                                                                        ToolTip="Скопировать в буфер обмена"/>
+                                                            </Grid>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
                         </Grid>
@@ -2897,6 +3034,10 @@
                                     Padding="10,3" VerticalAlignment="Center"
                                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                                 <StackPanel Orientation="Horizontal">
+                                    <!-- Вращающийся индикатор загрузки -->
+                                    <Border Style="{StaticResource SpinnerRing}" Width="14" Height="14"
+                                            CornerRadius="7" BorderThickness="2" Margin="0,0,8,0"
+                                            Visibility="{Binding IsBusy, Converter={StaticResource BoolVis}}"/>
                                     <TextBlock FontSize="15" FontWeight="Bold"
                                                Foreground="{StaticResource WhiteBrush}"
                                                FontFamily="Consolas" VerticalAlignment="Center"
@@ -2921,7 +3062,11 @@
                         Margin="0,0,24,24" Background="{StaticResource BgCardBrush}"
                         CornerRadius="10" Padding="16,11"
                         BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
-                        Visibility="{Binding ToastVisible, Converter={StaticResource BoolVis}}">
+                        Visibility="{Binding ToastVisible, Converter={StaticResource BoolVis}}"
+                        RenderTransformOrigin="0.5,1">
+                    <Border.RenderTransform>
+                        <TranslateTransform Y="0"/>
+                    </Border.RenderTransform>
                     <Border.Effect>
                         <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.45" Color="#000000"/>
                     </Border.Effect>
@@ -2934,6 +3079,12 @@
                                             <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                                                  From="0" To="1" Duration="0:0:0.2"/>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 From="12" To="0" Duration="0:0:0.25">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </DataTrigger.EnterActions>

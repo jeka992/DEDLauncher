@@ -34,6 +34,22 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Глобальный перехват крашей: пишем причину в лог вместо тихого вылета
+        DispatcherUnhandledException += (s, args) =>
+        {
+            Logger.Error("DispatcherUnhandled", args.Exception);
+            args.Handled = true;
+        };
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            Logger.Error("AppDomainUnhandled", args.ExceptionObject as Exception ?? new Exception(args.ExceptionObject?.ToString()));
+        };
+        TaskScheduler.UnobservedTaskException += (s, args) =>
+        {
+            Logger.Error("UnobservedTask", args.Exception);
+            args.SetObserved();
+        };
+
         // Режим установщика: копируем новую версию поверх существующей установки
         if (e.Args.Length >= 3 && e.Args[0] == "--updatefolder")
         {

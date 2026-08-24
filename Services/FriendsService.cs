@@ -32,6 +32,7 @@ public class FriendsService : IDisposable
     private readonly Dictionary<string, string> _friendAgree = new();    // code -> agreePub
     private readonly HashSet<string> _groupCodes = new();
     private readonly Dictionary<string, byte[]> _groupKeys = new(); // groupCode -> random 32-byte key
+    private readonly Dictionary<string, List<(string type, string innerJson)>> _pendingSealed = new(); // code -> сообщения, ждущие ключей
     private static readonly string GroupKeysPath = Path.Combine(MinecraftPathHelper.BaseDir, "groupkeys.json");
     private int _reconnectAttempt;
     private bool _started;
@@ -216,13 +217,30 @@ public class FriendsService : IDisposable
     private string SignData(string data) => CryptoHelper.Sign(_mySign, data);
 
     /// <summary>Шифрует и подписывает сообщение другу.</summary>
-    private async Task PublishSealedAsync(string topic, string code, string type, string innerJson)
+    private async Task PublishSealedAsync(string topic, string code, string type, string innerJson, bool bufferIfNoKeys = true)
     {
         if (!HasFriendKey(code))
         {
+            // Ключей ещё нет: запрашиваем их, а сообщение кладём в буфер,
+            // чтобы оно ушло сразу после получения ключей (а не терялось).
+            // Эфемерные типы (presence/typing) не буферизуем — они не критичны.
+            if (bufferIfNoKeys)
+            {
+                if (!_pendingSealed.TryGetValue(code, out var pending))
+                {
+                    pending = new List<(string, string)>();
+                    _pendingSealed[code] = pending;
+                }
+                pending.Add((type, innerJson));
+            }
             await PublishKeyRequestAsync(code);
             return;
         }
+        await SendSealedAsync(topic, code, type, innerJson);
+    }
+
+    private async Task SendSealedAsync(string topic, string code, string type, string innerJson)
+    {
         var key = CryptoHelper.Derive(_myAgree, _friendAgree[code]);
         var (nonce, cipher) = CryptoHelper.Encrypt(key, Encoding.UTF8.GetBytes(innerJson));
         var k = Convert.ToBase64String(nonce);
@@ -238,6 +256,15 @@ public class FriendsService : IDisposable
             s = SignData($"{type}|{MyCode}|{_mySignPub}|{k}|{d}")
         });
         await PublishAsync(topic, envelope);
+    }
+
+    /// <summary>После получения ключей отправляет накопившиеся сообщения.</summary>
+    private async Task FlushPendingSealedAsync(string code, string topic)
+    {
+        if (!_pendingSealed.TryGetValue(code, out var pending) || pending.Count == 0) return;
+        _pendingSealed.Remove(code);
+        foreach (var (type, innerJson) in pending)
+            await SendSealedAsync(topic, code, type, innerJson);
     }
 
     /// <summary>Запрашиваем открытые ключи друга (миграция старых друзей без ключей).</summary>
@@ -360,7 +387,7 @@ public class FriendsService : IDisposable
         });
         foreach (var kv in _friendsByTopic.ToList())
         {
-            try { await PublishSealedAsync(kv.Key, kv.Value, "p", inner); } catch { }
+            try { await PublishSealedAsync(kv.Key, kv.Value, "p", inner, bufferIfNoKeys: false); } catch { }
         }
     }
 
@@ -379,7 +406,7 @@ public class FriendsService : IDisposable
     public async Task SendTypingAsync(string code)
     {
         if (!_client.IsConnected) return;
-        await PublishSealedAsync(PairTopic(MyCode, code), code, "tp", "{}");
+        await PublishSealedAsync(PairTopic(MyCode, code), code, "tp", "{}", bufferIfNoKeys: false);
     }
 
     // ─── Группы ───
@@ -571,15 +598,23 @@ public class FriendsService : IDisposable
                 {
                     var spk = root.TryGetProperty("spk", out var s1) ? s1.GetString() ?? "" : "";
                     var apk = root.TryGetProperty("apk", out var a1) ? a1.GetString() ?? "" : "";
+                    var sig = root.TryGetProperty("s", out var sg) ? sg.GetString() ?? "" : "";
+                    if (string.IsNullOrEmpty(spk) || string.IsNullOrEmpty(apk) || string.IsNullOrEmpty(sig)) return;
+                    if (!CryptoHelper.Verify(spk, $"pk_req|{from}|{spk}|{apk}", sig)) return;
                     StoreFriendKey(code, spk, apk);
                     await SendMyKeysAsync(code);
+                    await FlushPendingSealedAsync(code, topic);
                     return;
                 }
                 if (type == "pk")
                 {
                     var spk = root.TryGetProperty("spk", out var s1) ? s1.GetString() ?? "" : "";
                     var apk = root.TryGetProperty("apk", out var a1) ? a1.GetString() ?? "" : "";
+                    var sig = root.TryGetProperty("s", out var sg) ? sg.GetString() ?? "" : "";
+                    if (string.IsNullOrEmpty(spk) || string.IsNullOrEmpty(apk) || string.IsNullOrEmpty(sig)) return;
+                    if (!CryptoHelper.Verify(spk, $"pk|{from}|{spk}|{apk}", sig)) return;
                     StoreFriendKey(code, spk, apk);
+                    await FlushPendingSealedAsync(code, topic);
                     return;
                 }
                 HandleSealed(code, type, from, root);
@@ -632,7 +667,18 @@ public class FriendsService : IDisposable
         {
             inner = Encoding.UTF8.GetString(CryptoHelper.Decrypt(key, Convert.FromBase64String(k), Convert.FromBase64String(d)));
         }
-        catch { return; }
+        catch
+        {
+            // Не расшифровалось сохранённым ключом — вероятно, у друга ротировались ключи.
+            // Запрашиваем свежие, чтобы следующее сообщение дошло (не теряем текущее молча).
+            _ = Task.Run(async () =>
+            {
+                await PublishKeyRequestAsync(code);
+                await Task.Delay(1000);
+                await FlushPendingSealedAsync(code, PairTopic(MyCode, code));
+            });
+            return;
+        }
 
         using var idoc = JsonDocument.Parse(inner);
         var ir = idoc.RootElement;
