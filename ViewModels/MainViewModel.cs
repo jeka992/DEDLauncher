@@ -3014,6 +3014,10 @@ public class MainViewModel : BaseViewModel
             _statsTimer.Tick += (s, a) => { if (_gameStopwatch != null) { TodayMinutes = _sessionTodayBefore + _gameStopwatch.Elapsed.TotalMinutes; } };
             _statsTimer.Start();
 
+            // Помечаем активную игровую сессию на диске: если лаунчер закроется,
+            // а игра продолжит идти — при следующем запуске недоучтённое время догоним.
+            WriteSessionStartMarker();
+
             if (server != null)
             {
                 server.LastPlayed = DateTime.UtcNow;
@@ -3115,6 +3119,7 @@ public class MainViewModel : BaseViewModel
             _statsTimer?.Stop();
             _statsTimer = null;
             SavePlayStats();
+            ClearSessionMarker();
         }
         catch { }
     }
@@ -3145,6 +3150,65 @@ public class MainViewModel : BaseViewModel
                 }
             }
             SavePlayStats();
+            // Сессия сохранена в момент закрытия лаунчера — но игра может идти дальше.
+            // Маркер НЕ удаляем: при следующем запуске лаунчера CatchUp догонит остаток.
+        }
+        catch { }
+    }
+
+    // ─── Маркер активной игровой сессии (для PostLaunchAction=close) ───
+    // Лаунчер может закрыться, пока игра идёт. Чтобы время не терялось,
+    // при запуске игры пишем файл с временем старта, а при следующем
+    // запуске лаунчера «догоняем» недоучтённое время до перезапуска.
+
+    private static string SessionMarkerPath => Path.Combine(MinecraftPathHelper.BaseDir, "session_start.json");
+
+    private void WriteSessionStartMarker()
+    {
+        try
+        {
+            File.WriteAllText(SessionMarkerPath, JsonSerializer.Serialize(new
+            {
+                start = _gameStartTime,
+                day = _todayKey.Date.ToString("yyyy-MM-dd")
+            }));
+        }
+        catch { }
+    }
+
+    private void ClearSessionMarker()
+    {
+        try { if (File.Exists(SessionMarkerPath)) File.Delete(SessionMarkerPath); } catch { }
+    }
+
+    /// <summary>При старте лаунчера: догоняем время, накопленное пока лаунчер был закрыт.</summary>
+    private void CatchUpMissedSessionTime()
+    {
+        try
+        {
+            if (!File.Exists(SessionMarkerPath)) return;
+            var doc = JsonDocument.Parse(File.ReadAllText(SessionMarkerPath));
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("start", out var startEl) || !startEl.TryGetDateTime(out var start)) return;
+            if (!root.TryGetProperty("day", out var dayEl)) return;
+
+            // Игра могла идти от start до перезапуска лаунчера
+            var elapsed = (DateTime.Now - start).TotalMinutes;
+            if (elapsed < 0.05) return;
+
+            // Если сессия была вчера — догоняем до полуночи, не больше
+            if (start.Date < DateTime.Now.Date)
+            {
+                var midnight = start.Date.AddDays(1);
+                elapsed = Math.Min(elapsed, (midnight - start).TotalMinutes);
+            }
+
+            TotalMinutes += elapsed;
+            _sessionTodayBefore += elapsed;
+            TodayMinutes = _sessionTodayBefore;
+            SavePlayStats();
+            ClearSessionMarker();
+            Logger.Log($"Статистика: догнано {elapsed:F1} мин закрытой сессии");
         }
         catch { }
     }
@@ -3190,9 +3254,10 @@ public class MainViewModel : BaseViewModel
             }
         }
         catch { }
-    }
 
-    // ═══════════════ DED MOD (HUD, бафы, плащ) ═══════════════
+        // Если лаунчер был закрыт, пока игра шла — догоняем недоучтённое время
+        CatchUpMissedSessionTime();
+    }
 
     /// <summary>Кладёт ded-mod в моды текущего профиля (обновляет при каждом запуске).
     /// Мод собран под конкретную версию Minecraft — для других версий профиля не ставится.</summary>
