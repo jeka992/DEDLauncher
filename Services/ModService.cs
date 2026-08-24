@@ -1244,13 +1244,39 @@ public class ModService : IDisposable
             foreach (var lib in libraries.EnumerateArray())
             {
                 var name = lib.GetProperty("name").GetString()!;
-                var url = lib.GetProperty("url").GetString()!;
                 var libPath = ConvertMavenToPath(name);
-                var fullUrl = $"{url}{libPath}";
-                var destPath = Path.Combine(MinecraftPathHelper.LibrariesDir, libPath);
+
+                // URL библиотеки: из downloads.artifact.path (если есть), иначе url-поле,
+                // иначе стандартный maven.fabricmc.net (официальный)
+                string baseUrl;
+                if (lib.TryGetProperty("downloads", out var dl) && dl.TryGetProperty("artifact", out var art)
+                    && art.TryGetProperty("url", out var artUrl))
+                {
+                    baseUrl = artUrl.GetString() ?? "";
+                }
+                else if (lib.TryGetProperty("url", out var u))
+                {
+                    baseUrl = u.GetString() ?? "";
+                }
+                else
+                {
+                    baseUrl = "https://maven.fabricmc.net/";
+                }
+
+                // downloads.artifact.path может отличаться от ConvertMavenToPath (classifier и т.п.)
+                string relative = libPath;
+                if (lib.TryGetProperty("downloads", out var dl2) && dl2.TryGetProperty("artifact", out var art2)
+                    && art2.TryGetProperty("path", out var p2))
+                {
+                    var customPath = p2.GetString();
+                    if (!string.IsNullOrEmpty(customPath)) relative = customPath;
+                }
+
+                var fullUrl = baseUrl.EndsWith('/') ? baseUrl + relative : baseUrl + "/" + relative;
+                var destPath = Path.Combine(MinecraftPathHelper.LibrariesDir, relative);
                 Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
 
-                if (!File.Exists(destPath))
+                if (!File.Exists(destPath) || new FileInfo(destPath).Length == 0)
                 {
                     progress?.Report(new DownloadProgress { FileName = $"Fabric: {Path.GetFileName(libPath)}", TotalBytes = 1 });
                     var response = await _http.GetAsync(fullUrl);
