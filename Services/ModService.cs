@@ -15,7 +15,9 @@ namespace DedLauncher.Services;
 
 public class ModService : IDisposable
 {
-    private const string ForgeApiUrl = "https://bmclapi2.bangbang93.com/forge/minecraft";
+    // Forge: официальный API (files.minecraftforge.net — промо-версии, maven — установщик)
+    private const string ForgePromoApi = "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json";
+    private const string ForgeMavenBase = "https://maven.minecraftforge.net";
     private const string FabricMetaUrl = "https://meta.fabricmc.net/v2/versions";
     private const string OptiFineApi = "https://bmclapi2.bangbang93.com";
     private const string ModrinthApi = "https://api.modrinth.com/v2";
@@ -1029,14 +1031,43 @@ public class ModService : IDisposable
 
     // ─── Forge / Fabric ───
 
+    /// <summary>
+    /// Список версий Forge для указанной версии Minecraft через официальный API
+    /// (files.minecraftforge.net maven-metadata). Формат версии: "MC-forgeVer" (напр. 1.21.1-52.0.40).
+    /// </summary>
     public async Task<List<ForgeVersionEntry>> GetForgeVersionsAsync(string mcVersion)
     {
         try
         {
-            var json = await _http.GetStringAsync($"{ForgeApiUrl}/{mcVersion}");
-            return JsonSerializer.Deserialize<List<ForgeVersionEntry>>(json) ?? new();
+            var json = await _http.GetStringAsync("https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.json");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.TryGetProperty(mcVersion, out var versions) && versions.ValueKind == JsonValueKind.Array)
+            {
+                var result = new List<ForgeVersionEntry>();
+                foreach (var v in versions.EnumerateArray())
+                {
+                    var full = v.GetString() ?? "";
+                    if (string.IsNullOrEmpty(full)) continue;
+                    // "1.21.1-52.0.40" → forgeVersion = "52.0.40"
+                    var idx = full.IndexOf('-');
+                    var forgeVer = idx > 0 ? full[(idx + 1)..] : full;
+                    result.Add(new ForgeVersionEntry { Version = forgeVer, McVersion = mcVersion });
+                }
+                return result;
+            }
+            return new();
         }
-        catch { return new(); }
+        catch
+        {
+            // Fallback на BMCLAPI, если официальный API недоступен
+            try
+            {
+                var json = await _http.GetStringAsync($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
+                return JsonSerializer.Deserialize<List<ForgeVersionEntry>>(json) ?? new();
+            }
+            catch { return new(); }
+        }
     }
 
     public async Task<List<FabricLoaderEntry>> GetFabricLoadersAsync()
@@ -1084,15 +1115,32 @@ public class ModService : IDisposable
         var versionDir = Path.Combine(MinecraftPathHelper.VersionsDir, tempVersionId);
         Directory.CreateDirectory(versionDir);
 
-        var installerUrl = $"https://bmclapi2.bangbang93.com/forge/download?mcversion={mcVersion}&version={forgeVersion}&category=installer&format=jar";
+        // Официальный maven-репозиторий Forge (fallback — BMCLAPI)
+        var installerUrl = $"{ForgeMavenBase}/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar";
         var installerPath = Path.Combine(versionDir, "forge-installer.jar");
         progress?.Report(new DownloadProgress { FileName = "Forge Installer", TotalBytes = 1 });
 
-        var response = await _http.GetAsync(installerUrl);
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var fs = File.Create(installerPath);
-        await stream.CopyToAsync(fs);
+        try
+        {
+            var response = await _http.GetAsync(installerUrl);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            await using var fs = File.Create(installerPath);
+            await stream.CopyToAsync(fs);
+            await fs.DisposeAsync();
+        }
+        catch
+        {
+            // Fallback: BMCLAPI (китайское зеркало), если официальный maven недоступен
+            Logger.Log($"Forge maven недоступен, пробуем BMCLAPI ({installerUrl})");
+            var bmclUrl = $"https://bmclapi2.bangbang93.com/forge/download?mcversion={mcVersion}&version={forgeVersion}&category=installer&format=jar";
+            var response = await _http.GetAsync(bmclUrl);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            await using var fs = File.Create(installerPath);
+            await stream.CopyToAsync(fs);
+            await fs.DisposeAsync();
+        }
 
         var tempDir = Path.Combine(versionDir, "temp");
         Directory.CreateDirectory(tempDir);
