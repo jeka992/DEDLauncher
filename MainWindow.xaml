@@ -819,8 +819,7 @@
                                                 Click="OpenScreenshotsFolder_Click"/>
                                     </Grid>
 
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                                  PreviewMouseWheel="ScreenshotsScroll_PreviewMouseWheel"
+                                    <ScrollViewer VerticalScrollBarVisibility="Disabled"
                                                   MaxHeight="{Binding ActualHeight, ElementName=PagesHost, Converter={StaticResource Sub}, ConverterParameter=120}">
                                         <ItemsControl ItemsSource="{Binding Screenshots}">
                                             <ItemsControl.ItemsPanel>
