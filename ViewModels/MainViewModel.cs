@@ -2838,6 +2838,37 @@ public class MainViewModel : BaseViewModel
             else if (CurrentProfile.ModLoader == "OptiFine" && !string.IsNullOrEmpty(CurrentProfile.ModLoaderVersion))
                 versionId = $"{CurrentProfile.VersionId}-OptiFine_{CurrentProfile.ModLoaderVersion}";
 
+            // Автоустановка загрузчика: если выбран Fabric/Forge, а версия не установлена на диске —
+            // ставим её перед запуском (иначе CmlLib выдаст «Cannot find ...»).
+            var versionJsonPath = Path.Combine(MinecraftPathHelper.VersionsDir, versionId, $"{versionId}.json");
+            if (CurrentProfile.ModLoader != "Vanilla" && !File.Exists(versionJsonPath))
+            {
+                Status = $"Установка {CurrentProfile.ModLoader} {CurrentProfile.ModLoaderVersion}...";
+                var loaderProgress = new Progress<DownloadProgress>(p =>
+                    Application.Current.Dispatcher.Invoke(() => { DlFile = p.FileName; Status = $"Установка загрузчика: {p.FileName}"; }));
+                try
+                {
+                    if (CurrentProfile.ModLoader == "Fabric")
+                        await _mods.InstallFabricAsync(CurrentProfile.VersionId, CurrentProfile.ModLoaderVersion, loaderProgress);
+                    else if (CurrentProfile.ModLoader == "Forge")
+                        await _mods.InstallForgeAsync(CurrentProfile.VersionId, CurrentProfile.ModLoaderVersion, loaderProgress);
+                    else if (CurrentProfile.ModLoader == "OptiFine")
+                        await _mods.InstallOptiFineAsync(CurrentProfile.VersionId, CurrentProfile.ModLoaderVersion, loaderProgress);
+
+                    await RefreshInstalledVersions();
+                    Status = $"Запуск {versionId}...";
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("AutoInstallLoaderOnLaunch", ex);
+                    Status = $"Не удалось установить {CurrentProfile.ModLoader}: {ex.Message}";
+                    IsLaunching = false;
+                    IsGameRunning = false;
+                    IsBusy = false;
+                    return;
+                }
+            }
+
             // Для оффлайн-аккаунтов со скином ставим CustomSkinLoader (работает и в одиночке, и на серверах)
             var extraJvmArgs = new List<MArgument>(MLaunchOption.DefaultExtraJvmArguments);
             if (!string.IsNullOrEmpty(CurrentProfile.JvmArgs))
