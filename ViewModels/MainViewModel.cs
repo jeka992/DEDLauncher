@@ -33,7 +33,7 @@ public class MainViewModel : BaseViewModel
     private JELoginHandler? _loginHandler;
     private MSession? _session;
     private VersionMetadataCollection? _allVersions;
-    private Process? _gameProcess;
+    private readonly List<GameInstance> _gameInstances = new();
     private CancellationTokenSource? _installCts;
 
     public MainViewModel()
@@ -1345,12 +1345,13 @@ public class MainViewModel : BaseViewModel
     /// </summary>
     private string GetProfileGameDir(LaunchProfile p)
     {
-        if (!string.IsNullOrEmpty(p.GameDir))
-        {
-            if (!Directory.Exists(p.GameDir)) Directory.CreateDirectory(p.GameDir);
-            return p.GameDir;
-        }
-        return MinecraftPathHelper.GameDir;
+        // Каждый профиль — своя папка с модами, конфигами и мирами.
+        // Чтобы CmlLib не ломал обратные слэши (C:\Users → C:Users),
+        // передаём путь с прямыми слэшами — Java их отлично понимает.
+        var dir = p.GameDir;
+        if (string.IsNullOrEmpty(dir))
+            dir = Path.Combine(MinecraftPathHelper.BaseDir, "profiles", p.Id, "game");
+        return dir.Replace('\\', '/');
     }
     public ObservableCollection<string> ModLoaders { get; } = new(new[] { "Vanilla", "Forge", "Fabric", "OptiFine" });
     private string _editProfileVersion = "";
@@ -2301,8 +2302,11 @@ public class MainViewModel : BaseViewModel
 
     private void ApplyAccount(AccountInfo acc)
     {
+        // Оффлайн-аккаунт: accessToken НЕ "0" (иначе демо-режим в старых версиях),
+        // userType "legacy" (иначе в старых версиях серый мультиплеер «проверьте Microsoft»).
+        // Для новых версий (1.17+) legacy тоже работает как оффлайн.
         _session = acc.IsOffline
-            ? new MSession { Username = acc.Username, UUID = acc.Uuid, AccessToken = "0", UserType = "legacy" }
+            ? new MSession { Username = acc.Username, UUID = acc.Uuid, AccessToken = FakeAccessToken(acc.Username), UserType = "legacy" }
             : new MSession { Username = acc.Username, UUID = acc.Uuid, AccessToken = acc.AccessToken };
 
         Account = acc;
@@ -2424,7 +2428,7 @@ public class MainViewModel : BaseViewModel
                             {
                                 Username = Account.Username,
                                 UUID = Account.Uuid,
-                                AccessToken = "0",
+                                AccessToken = FakeAccessToken(Account.Username),
                                 UserType = "legacy"
                             };
                     }
@@ -2433,10 +2437,17 @@ public class MainViewModel : BaseViewModel
             else if (AutoLogin)
             {
                 // Auto-create default offline account
-                _session = MSession.CreateOfflineSession("Player");
+                var fakeToken = FakeAccessToken("Player");
+                _session = new MSession
+                {
+                    Username = "Player",
+                    UUID = GenerateOfflineUuid("Player"),
+                    AccessToken = fakeToken,
+                    UserType = "legacy"
+                };
                 Account = new AccountInfo
                 {
-                    Username = "Player", Uuid = _session.UUID, AccessToken = _session.AccessToken,
+                    Username = "Player", Uuid = _session.UUID, AccessToken = fakeToken,
                     AccountType = "offline", ExpiresAt = DateTime.MaxValue
                 };
                 SaveAccount();
@@ -2572,14 +2583,14 @@ public class MainViewModel : BaseViewModel
         {
             Username = name,
             UUID = uuid,
-            AccessToken = "0",
+            AccessToken = FakeAccessToken(name),
             UserType = "legacy"
         };
         Account = new AccountInfo
         {
             Username = name,
             Uuid = uuid,
-            AccessToken = "0",
+            AccessToken = FakeAccessToken(name),
             AccountType = "offline",
             ExpiresAt = DateTime.MaxValue
         };
@@ -2600,6 +2611,64 @@ public class MainViewModel : BaseViewModel
         hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
         var uuid = new Guid(hash);
         return uuid.ToString("N");
+    }
+
+    /// <summary>
+    /// «Валидный» access token для оффлайн-аккаунта.
+    /// 1.16.5 (обновлённый authlib) парсит accessToken как SignedJWT в Realms-проверке —
+    /// hex/uuid-токен падает («Failed to parse into SignedJWT») и мультиплеер/реалмс
+    /// отключаются. Поэтому формируем НАСТОЯЩИЙ JWT: header.payload.signature,
+    /// все части в base64url. Подпись не проверяется, главное — формат.
+    /// </summary>
+    private static string FakeAccessToken(string username)
+    {
+        string B64Url(string s) => System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(s))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+        var header = B64Url("{\"alg\":\"RS256\",\"typ\":\"JWT\",\"kid\":\"1\"}");
+        var payload = B64Url($"{{\"sub\":\"{GenerateOfflineUuid(username)}\",\"xuid\":\"2535418765421612\",\"exp\":4102444800,\"nbf\":0,\"iat\":0,\"iss\":\"https://sts.windows.net/\"}}");
+        var sigBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+        var sig = System.Convert.ToBase64String(sigBytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        return $"{header}.{payload}.{sig}";
+    }
+
+    /// <summary>
+    /// Патчит version json на диске, добавляя --userProperties и --clientId в список
+    /// игровых аргументов. CmlLib не вставляет их, если шаблон не содержит плейсхолдеров,
+    /// а 1.16.5 проверяет hasCachedProperties() по PropertyMap из --userProperties.
+    /// </summary>
+    private void PatchVersionJsonForMultiplayer(string versionId)
+    {
+        try
+        {
+            var jsonPath = Path.Combine(MinecraftPathHelper.BaseDir, "minecraft", "versions", versionId, $"{versionId}.json");
+            if (!File.Exists(jsonPath)) return;
+
+            var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(jsonPath));
+            // Проверяем — уже пропатчен?
+            var root = doc.RootElement;
+            var args = root.GetProperty("arguments").GetProperty("game");
+            var hasUserProps = false;
+            foreach (var arg in args.EnumerateArray())
+            {
+                if (arg.ValueKind == System.Text.Json.JsonValueKind.String &&
+                    arg.GetString() == "--userProperties")
+                {
+                    hasUserProps = true;
+                    break;
+                }
+            }
+            if (hasUserProps) return;
+
+            // Вставляем --userProperties и --clientId через JSON-манипуляцию.
+            // Проще всего — прочитать как строку и найти шаблон для замены.
+            var raw = File.ReadAllText(jsonPath);
+            // Ищем `"--versionType", "${version_type}"` и добавляем после
+            raw = raw.Replace("--versionType\", \"${version_type}\"",
+                "--versionType\", \"${version_type}\", \"--userProperties\", \"${user_properties}\", \"--clientId\", \"${clientid}\"");
+            File.WriteAllText(jsonPath, raw);
+        }
+        catch { }
     }
 
     // ═══════════════ VERSIONS ═══════════════
@@ -2653,7 +2722,8 @@ public class MainViewModel : BaseViewModel
             {
                 Session = _session,
                 MaximumRamMb = CurrentProfile?.MaxRamMb ?? 4096,
-                MinimumRamMb = CurrentProfile?.MinRamMb ?? 2048
+                MinimumRamMb = CurrentProfile?.MinRamMb ?? 2048,
+                IsDemo = false
             };
 
             var installTask = Task.Run(async () =>
@@ -2720,31 +2790,38 @@ public class MainViewModel : BaseViewModel
 
         JavaInfo? suitableJava = null;
 
-        // Если в профиле явно указан путь к Java и файл существует — используем его
-        // напрямую, не переспрашивая (даже если сканирование не нашло его).
+        // Максимально допустимая Java для этой версии Minecraft:
+        //  - 1.16 и ниже (required=8): только Java 8 (Java 17+ не запустит старые версии)
+        //  - 1.17-1.20 (required=16/17): Java 17-21
+        //  - 1.21+ (required=21): Java 21 (не новее — CmlLib/MC жёстко привязан)
+        var maxJava = requiredVersion switch
+        {
+            8 => 8,
+            16 => 17,
+            17 => 21,
+            _ => 21
+        };
+
+        // Если в профиле явно указан путь к Java и файл существует — используем его,
+        // но ТОЛЬКО если версия подходит (в диапазоне required..maxJava)
         if (javaPathExists && !string.IsNullOrEmpty(javaPath))
         {
             var profileJava = await Task.Run(() => _java.ProbeJava(javaPath!));
-            if (profileJava != null && profileJava.MajorVersion >= requiredVersion)
+            if (profileJava != null && profileJava.MajorVersion >= requiredVersion && profileJava.MajorVersion <= maxJava)
             {
                 suitableJava = profileJava;
-            }
-            else if (profileJava != null && profileJava.MajorVersion < requiredVersion)
-            {
-                // Путь есть, но версия старая — предупредим ниже
             }
         }
 
         // Если путь из профиля не подошёл — ищем по всей системе: предпочитаем ТОЧНУЮ
-        // требуемую версию (Minecraft жёстко привязан к конкретной мажорной версии Java —
-        // 1.21 требует именно 21, не 25), и только если точной нет — берём более новую.
+        // требуемую версию, затем ближайшую подходящую в допустимом диапазоне.
         if (suitableJava == null)
         {
             var installed = await _java.FindJavaInstallationsAsync();
             if (!string.IsNullOrEmpty(javaPath))
                 suitableJava = installed.FirstOrDefault(j => j.Path == javaPath && j.MajorVersion == requiredVersion);
             suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion == requiredVersion);
-            suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion > requiredVersion);
+            suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion > requiredVersion && j.MajorVersion <= maxJava);
             suitableJava ??= installed.FirstOrDefault(j => j.MajorVersion >= requiredVersion);
         }
 
@@ -2829,12 +2906,23 @@ public class MainViewModel : BaseViewModel
 
         try
         {
-            // Определяем фактический ID версии с учётом загрузчика модов
+            // Определяем фактический ID версии с учётом загрузчика модов.
+            // Для Fabric/Forge сначала ищем УЖЕ УСТАНОВЛЕННУЮ версию на диске
+            // (по префиксу) — чтобы не вычислять несуществующий id из профиля
+            // (например Fabric 0.19.3 для 1.16.5 — его не существует).
             string versionId = CurrentProfile.VersionId;
-            if (CurrentProfile.ModLoader == "Fabric" && !string.IsNullOrEmpty(CurrentProfile.ModLoaderVersion))
-                versionId = $"fabric-loader-{CurrentProfile.ModLoaderVersion}-{CurrentProfile.VersionId}";
+            if (CurrentProfile.ModLoader == "Fabric")
+            {
+                var installedFabric = InstalledVersionIds
+                    .FirstOrDefault(v => v.StartsWith("fabric-loader-") && v.EndsWith("-" + CurrentProfile.VersionId));
+                versionId = installedFabric ?? $"fabric-loader-{CurrentProfile.ModLoaderVersion}-{CurrentProfile.VersionId}";
+            }
             else if (CurrentProfile.ModLoader == "Forge" && !string.IsNullOrEmpty(CurrentProfile.ModLoaderVersion))
-                versionId = $"{CurrentProfile.VersionId}-forge-{CurrentProfile.ModLoaderVersion}";
+            {
+                var installedForge = InstalledVersionIds
+                    .FirstOrDefault(v => v.StartsWith(CurrentProfile.VersionId + "-forge-"));
+                versionId = installedForge ?? $"{CurrentProfile.VersionId}-forge-{CurrentProfile.ModLoaderVersion}";
+            }
             else if (CurrentProfile.ModLoader == "OptiFine" && !string.IsNullOrEmpty(CurrentProfile.ModLoaderVersion))
                 versionId = $"{CurrentProfile.VersionId}-OptiFine_{CurrentProfile.ModLoaderVersion}";
 
@@ -2856,6 +2944,22 @@ public class MainViewModel : BaseViewModel
                         await _mods.InstallOptiFineAsync(CurrentProfile.VersionId, CurrentProfile.ModLoaderVersion, loaderProgress);
 
                     await RefreshInstalledVersions();
+
+                    // После установки реальный id может отличаться от вычисленного
+                    // (например, для 1.16.5 подставился другой loader) — найдём его
+                    if (CurrentProfile.ModLoader == "Fabric")
+                    {
+                        var installedFabric = InstalledVersionIds
+                            .FirstOrDefault(v => v.StartsWith("fabric-loader-") && v.EndsWith("-" + CurrentProfile.VersionId));
+                        if (installedFabric != null) versionId = installedFabric;
+                    }
+                    else if (CurrentProfile.ModLoader == "Forge")
+                    {
+                        var installedForge = InstalledVersionIds
+                            .FirstOrDefault(v => v.StartsWith(CurrentProfile.VersionId + "-forge-"));
+                        if (installedForge != null) versionId = installedForge;
+                    }
+
                     Status = $"Запуск {versionId}...";
                 }
                 catch (Exception ex)
@@ -2874,15 +2978,29 @@ public class MainViewModel : BaseViewModel
             if (!string.IsNullOrEmpty(CurrentProfile.JvmArgs))
                 extraJvmArgs.Add(MArgument.FromCommandLine(CurrentProfile.JvmArgs));
 
+            // authlib-injector: Java-агент, перехватывающий Yggdrasil-авторизацию.
+            // Без него 1.16.5 не даёт мультиплеер офлайн-аккаунтам.
+            var injectorPath = Path.Combine(
+                Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? ".",
+                "authlib-injector.jar");
+            if (File.Exists(injectorPath))
+                extraJvmArgs.Insert(0, new MArgument($"-javaagent:{injectorPath}=ely.by"));
+
             // Сетевые оптимизации: только IPv4 (без зависаний на IPv6-резолве)
             if (Ipv4Only)
                 extraJvmArgs.Add(new MArgument("-Djava.net.preferIPv4Stack=true"));
 
-            // Профиль запускается в своей игровой папке (изоляция модов и миров)
-            var gameDir = GetProfileGameDir(CurrentProfile);
-            var extraGameArgs = new List<MArgument>();
-            if (!string.Equals(gameDir, MinecraftPathHelper.GameDir, StringComparison.OrdinalIgnoreCase))
-                extraGameArgs.Add(MArgument.FromCommandLine($"--gameDir \"{gameDir}\""));
+            // Все профили используют ОБЩУЮ игровую папку (как в других лаунчерах):
+            // конфиги, сервера, миры и настройки сохраняются при смене версии.
+            // Раньше профили были изолированы через --gameDir, но CmlLib ломает
+            // обратные слэши в пути. Все профили используют общую папку,
+            // а моды переключаются при смене профиля (CopyModsToCurrentProfile).
+var extraGameArgs = new List<MArgument>();
+
+            // Патчим version.json на диске: добавляем ${user_properties} и ${clientid}
+            // в шаблон аргументов, чтобы CmlLib подставил значения из MLaunchOption.
+            // Без этого 1.16.5 не получает --userProperties → hasCachedProperties() = false
+            PatchVersionJsonForMultiplayer(CurrentProfile.VersionId);
 
             // DED Mod (скин, плащ, копирование чата) — кладём в моды профиля
             EnsureDedMod();
@@ -2897,11 +3015,14 @@ public class MainViewModel : BaseViewModel
                 FullScreen = CurrentProfile.Fullscreen,
                 ScreenWidth = CurrentProfile.WindowWidth,
                 ScreenHeight = CurrentProfile.WindowHeight,
-                JavaPath = !string.IsNullOrEmpty(CurrentProfile.JavaPath) ? CurrentProfile.JavaPath : null,
+                JavaPath = suitableJava?.Path ?? (!string.IsNullOrEmpty(CurrentProfile.JavaPath) ? CurrentProfile.JavaPath : null),
                 ExtraJvmArguments = extraJvmArgs,
                 ExtraGameArguments = extraGameArgs,
                 ServerIp = server?.Address,
-                ServerPort = server?.Port ?? 25565
+                ServerPort = server?.Port ?? 25565,
+                IsDemo = false,
+                ClientId = "00000000-0000-0000-0000-000000000000",
+                UserProperties = "{\"preferredLanguage\":[\"ru_RU\"]}",
             };
 
             _installCts?.Cancel();
@@ -2961,25 +3082,25 @@ public class MainViewModel : BaseViewModel
                 return;
             }
 
-            _gameProcess = await installTask;
+            var process = await installTask;
 
             if (cts.IsCancellationRequested)
             {
                 Status = "Запуск отменён";
-                IsGameRunning = false;
+                IsGameRunning = _gameInstances.Any(i => i.Process != null && !i.Process.HasExited);
                 IsLaunching = false;
                 IsBusy = false;
                 return;
             }
 
             // Включаем перенаправление вывода (если CmlLib его не включил)
-            _gameProcess.StartInfo.RedirectStandardOutput = true;
-            _gameProcess.StartInfo.RedirectStandardError = true;
-            _gameProcess.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.UseShellExecute = false;
             // Окно консоли Java НЕ показываем — иначе при запуске игры
             // появляется чёрное cmd-окно поверх лаунчера
-            _gameProcess.StartInfo.CreateNoWindow = true;
-            _gameProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
             // Evidence-лог запуска (как в XMCL): пишем игреский вывод в файл на диск
             var gameLogPath = Path.Combine(MinecraftPathHelper.BaseDir, "logs",
@@ -2988,7 +3109,18 @@ public class MainViewModel : BaseViewModel
             var gameLogWriter = File.AppendText(gameLogPath);
             var crashDetected = false;
 
-            _gameProcess.OutputDataReceived += (s, e) =>
+            // Регистрируем инстанс игры (поддержка нескольких одновременных запусков)
+            var instance = new GameInstance
+            {
+                Process = process,
+                ProfileId = CurrentProfile.Id,
+                ProfileName = CurrentProfile.Name,
+                StartTime = DateTime.Now,
+                LogWriter = gameLogWriter
+            };
+            _gameInstances.Add(instance);
+
+            process.OutputDataReceived += (s, e) =>
             {
                 if (e.Data != null)
                 {
@@ -2998,7 +3130,7 @@ public class MainViewModel : BaseViewModel
                         crashDetected = true;
                 }
             };
-            _gameProcess.ErrorDataReceived += (s, e) =>
+            process.ErrorDataReceived += (s, e) =>
             {
                 if (e.Data != null)
                 {
@@ -3006,11 +3138,11 @@ public class MainViewModel : BaseViewModel
                     try { gameLogWriter.WriteLine(e.Data); } catch { }
                 }
             };
-            _gameProcess.EnableRaisingEvents = true;
-            _gameProcess.Exited += (s, e) => Application.Current.Dispatcher.Invoke(() =>
+            process.EnableRaisingEvents = true;
+            process.Exited += (s, e) => Application.Current.Dispatcher.Invoke(() =>
             {
-                IsGameRunning = false;
                 try { gameLogWriter.Flush(); gameLogWriter.Dispose(); } catch { }
+                _gameInstances.Remove(instance);
 
                 if (crashDetected)
                 {
@@ -3023,11 +3155,15 @@ public class MainViewModel : BaseViewModel
                     Status = "Игра закрыта";
                 }
                 FinishGameStats();
+                IsGameRunning = _gameInstances.Any(i => i.Process != null && !i.Process.HasExited);
             });
 
-            _gameProcess.Start();
-            _gameProcess.BeginOutputReadLine();
-            _gameProcess.BeginErrorReadLine();
+            // Логируем полную команду запуска — помогает отладить demo/аргументы
+            Logger.Log($"LAUNCH ARGS: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
             IsBusy = false;
             DlProgress = 100;
@@ -3036,7 +3172,8 @@ public class MainViewModel : BaseViewModel
             CurrentProfile.LastPlayed = DateTime.UtcNow;
             SaveLaunchHistory(CurrentProfile.VersionId, CurrentProfile.ModLoader);
             SaveProfile(CurrentProfile);
-            Status = server != null ? $"Подключение к {server.AddressLabel}..." : "Игра запущена";
+            Status = server != null ? $"Подключение к {server.AddressLabel}..." : $"Игра запущена (инстансов: {_gameInstances.Count})";
+            IsGameRunning = true;
 
             _gameStartTime = DateTime.Now;
             _gameStopwatch = Stopwatch.StartNew();
@@ -3071,13 +3208,13 @@ public class MainViewModel : BaseViewModel
         catch (OperationCanceledException)
         {
             Status = "Запуск отменён";
-            IsGameRunning = false;
+            IsGameRunning = _gameInstances.Any(i => i.Process != null && !i.Process.HasExited);
             IsBusy = false;
         }
         catch (Exception ex)
         {
             Status = $"Ошибка: {ex.Message}";
-            IsGameRunning = false;
+            IsGameRunning = _gameInstances.Any(i => i.Process != null && !i.Process.HasExited);
         }
         finally { IsLaunching = false; }
     }
@@ -3099,26 +3236,31 @@ public class MainViewModel : BaseViewModel
             Status = "Запуск остановлен";
         }
 
-        if (_gameProcess != null && !_gameProcess.HasExited)
+        // Убиваем ВСЕ запущенные инстансы (поддержка нескольких Minecraft сразу)
+        foreach (var inst in _gameInstances.ToList())
         {
-            // Полное убийство дерева процессов (как в XMCL): taskkill /F /T —
-            // Java может порождать дочерние процессы, которые без этого останутся висеть.
+            var proc = inst.Process;
+            if (proc == null || proc.HasExited) continue;
             try
             {
+                // Полное убийство дерева процессов (как в XMCL): taskkill /F /T —
+                // Java может порождать дочерние процессы, которые без этого останутся висеть.
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "taskkill",
-                    Arguments = $"/F /T /PID {_gameProcess.Id}",
+                    Arguments = $"/F /T /PID {proc.Id}",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 });
             }
             catch { }
 
-            _gameProcess.Kill();
-            _gameProcess = null;
-            FinishGameStats();
+            try { proc.Kill(); } catch { }
+            try { inst.LogWriter?.Flush(); inst.LogWriter?.Dispose(); } catch { }
         }
+        _gameInstances.Clear();
+        FinishGameStats();
+        IsGameRunning = false;
     }
 
     private double _sessionTodayBefore;
@@ -3404,11 +3546,9 @@ public class MainViewModel : BaseViewModel
         { Status = "Профиль с таким именем уже есть"; return; }
 
         var p = new LaunchProfile { Name = name, VersionId = SelectedVersionId ?? "1.21.1", MaxRamMb = 4096, MinRamMb = 2048 };
-        // Новые профили всегда изолированы — своя папка модов и миров
-        p.GameDir = Path.Combine(MinecraftPathHelper.BaseDir, "profiles", p.Id, "game");
+        // Профили используют общую игровую папку — конфиги и миры не слетают при смене версии
         Profiles.Add(p); SaveProfile(p); CurrentProfile = p;
         ProfileNameInput = "";
-        CopyBaseAssetsToProfile(p);
         LoadMods();
         Status = $"Профиль «{name}» создан";
         ShowToast("Профиль создан ✓");
@@ -4254,7 +4394,7 @@ public class MainViewModel : BaseViewModel
         Screenshots.Clear();
         try
         {
-            var dir = Path.Combine(_mods.GameDir, "screenshots");
+            var dir = Path.Combine(MinecraftPathHelper.GameDir, "screenshots");
             if (!Directory.Exists(dir)) return;
 
             foreach (var file in Directory.GetFiles(dir, "*.png")
@@ -5092,4 +5232,14 @@ public class RelayCommand : ICommand
     public void Execute(object? p) => _exec(p);
     public event EventHandler? CanExecuteChanged;
     public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+}
+
+/// <summary>Один запущенный инстанс Minecraft (поддержка нескольких одновременных игр).</summary>
+public class GameInstance
+{
+    public Process? Process { get; set; }
+    public string ProfileId { get; set; } = "";
+    public string ProfileName { get; set; } = "";
+    public DateTime StartTime { get; set; }
+    public StreamWriter? LogWriter { get; set; }
 }

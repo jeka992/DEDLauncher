@@ -1222,11 +1222,25 @@ public class ModService : IDisposable
     public async Task InstallFabricAsync(string mcVersion, string loaderVersion,
         IProgress<DownloadProgress>? progress = null)
     {
-        var fabricUrl = $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{loaderVersion}/profile/json";
         string json;
         using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
         {
-            json = await _http.GetStringAsync(fabricUrl, cts.Token);
+            var fabricUrl = $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{loaderVersion}/profile/json";
+            try
+            {
+                json = await _http.GetStringAsync(fabricUrl, cts.Token);
+            }
+            catch (HttpRequestException)
+            {
+                // Loader из профиля не подходит для этой версии Minecraft (400/404) —
+                // автоматически берём последний стабильный loader.
+                var latest = await GetLatestFabricLoaderAsync(mcVersion);
+                if (string.IsNullOrEmpty(latest))
+                    throw new Exception($"Не удалось найти Fabric loader для {mcVersion}");
+                loaderVersion = latest;
+                fabricUrl = $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{latest}/profile/json";
+                json = await _http.GetStringAsync(fabricUrl, cts.Token);
+            }
         }
 
         // Берём реальный ID версии из JSON (например fabric-loader-0.16.9-1.21.1)

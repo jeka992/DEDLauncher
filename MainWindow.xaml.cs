@@ -650,10 +650,25 @@ public partial class MainWindow : Window
             _vm.OpenScreenshot(item);
     }
 
+    /// <summary>
+    /// Скролл фото: колесо прокручивает внутренний список, а когда он дошёл
+    /// до конца/начала — прокручивается внешняя страница (чтобы не «застревать»).
+    /// </summary>
     private void ScreenshotsScroll_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        ScreenshotsScroll.ScrollToVerticalOffset(ScreenshotsScroll.VerticalOffset - e.Delta / 2.0);
-        e.Handled = true;
+        var scroller = sender as ScrollViewer ?? ScreenshotsScroll;
+        if (scroller == null) return;
+
+        bool canScrollDown = scroller.VerticalOffset < scroller.ScrollableHeight;
+        bool canScrollUp = scroller.VerticalOffset > 0;
+
+        if ((e.Delta > 0 && canScrollUp) || (e.Delta < 0 && canScrollDown))
+        {
+            scroller.ScrollToVerticalOffset(scroller.VerticalOffset - e.Delta / 2.0);
+            e.Handled = true;
+        }
+        // Если внутренний скролл не может прокрутиться дальше — не перехватываем,
+        // пусть колесо уйдёт внешней странице
     }
 
     private void CopyScreenshot_Click(object sender, RoutedEventArgs e)

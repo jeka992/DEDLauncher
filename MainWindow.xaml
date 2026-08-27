@@ -609,6 +609,11 @@
                                                            Foreground="{StaticResource TextFaintBrush}" VerticalAlignment="Center"/>
                                             </StackPanel>
 
+                                            <!-- Выбор профиля -->
+                                            <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding CurrentProfile}"
+                                                      DisplayMemberPath="Name" Margin="0,0,0,8" Width="260"
+                                                      HorizontalAlignment="Left"/>
+
                                             <TextBlock Text="{Binding CurrentProfile.VersionId}" FontSize="28" FontWeight="Black"
                                                        Margin="0,0,0,2"/>
                                             <TextBlock Text="Minecraft" FontSize="11" Foreground="{StaticResource TextDimBrush}"
@@ -683,27 +688,27 @@
                                         </StackPanel>
                                     </Border>
 
-<!-- Stats -->
-                                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
-                                    <StackPanel>
-                                        <TextBlock Text="СТАТИСТИКА ИГРЫ" FontSize="9" FontWeight="Bold"
-                                                   Foreground="{StaticResource TextFaintBrush}" Margin="0,0,0,8"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0">
-                                                <TextBlock Text="{Binding TodayTimeLabel}" FontSize="22" FontWeight="Black"/>
-                                                <TextBlock Text="сегодня" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                                                <TextBlock Text="{Binding TotalTimeLabel}" FontSize="22" FontWeight="Black"/>
-                                                <TextBlock Text="всего" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
+                                    <!-- Stats -->
+                                    <Border Grid.Column="4" Style="{StaticResource Card}">
+                                        <StackPanel>
+                                            <TextBlock Text="СТАТИСТИКА ИГРЫ" FontSize="9" FontWeight="Bold"
+                                                       Foreground="{StaticResource TextFaintBrush}" Margin="0,0,0,8"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding TodayTimeLabel}" FontSize="22" FontWeight="Black"/>
+                                                    <TextBlock Text="сегодня" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                                    <TextBlock Text="{Binding TotalTimeLabel}" FontSize="22" FontWeight="Black"/>
+                                                    <TextBlock Text="всего" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
                                 </Grid>
 
                                 <!-- History -->
@@ -819,7 +824,8 @@
                                                 Click="OpenScreenshotsFolder_Click"/>
                                     </Grid>
 
-                                    <ScrollViewer VerticalScrollBarVisibility="Disabled"
+                                    <ScrollViewer x:Name="ScreenshotsScroll" VerticalScrollBarVisibility="Auto"
+                                                  PreviewMouseWheel="ScreenshotsScroll_PreviewMouseWheel"
                                                   MaxHeight="{Binding ActualHeight, ElementName=PagesHost, Converter={StaticResource Sub}, ConverterParameter=120}">
                                         <ItemsControl ItemsSource="{Binding Screenshots}">
                                             <ItemsControl.ItemsPanel>
@@ -2544,7 +2550,7 @@
                                             Click="OpenScreenshotsFolder_Click"/>
                                 </Grid>
 
-                                <ScrollViewer x:Name="ScreenshotsScroll" VerticalScrollBarVisibility="Auto"
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
                                               PreviewMouseWheel="ScreenshotsScroll_PreviewMouseWheel"
                                               MaxHeight="{Binding ActualHeight, ElementName=PagesHost, Converter={StaticResource Sub}, ConverterParameter=120}">
                                     <ItemsControl ItemsSource="{Binding Screenshots}">
@@ -2603,28 +2609,32 @@
                                     <TextBlock Text="НАСТРОЙКИ" FontSize="10" FontWeight="Bold"
                                                Foreground="{StaticResource TextFaintBrush}" Margin="0,0,0,10"/>
                                     <Button x:Name="BtnSetGeneral" Click="SettingsSection_Click" Tag="0"
-                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Left" Margin="0,0,0,4">
+                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                            Height="36">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="⚙" FontSize="13" Margin="0,0,8,0"/>
                                             <TextBlock Text="Общие"/>
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="BtnSetProfile" Click="SettingsSection_Click" Tag="1"
-                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Left" Margin="0,0,0,4">
+                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                            Height="36">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="👤" FontSize="12" Margin="0,0,8,0"/>
                                             <TextBlock Text="Профиль"/>
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="BtnSetLaunch" Click="SettingsSection_Click" Tag="2"
-                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Left" Margin="0,0,0,4">
+                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                            Height="36">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="▶" FontSize="12" Margin="0,0,8,0"/>
                                             <TextBlock Text="Запуск и память"/>
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="BtnSetAppearance" Click="SettingsSection_Click" Tag="3"
-                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Left">
+                                            Style="{StaticResource BtnOutline}" HorizontalAlignment="Stretch"
+                                            Height="36">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="🎨" FontSize="12" Margin="0,0,8,0"/>
                                             <TextBlock Text="Внешний вид"/>
